@@ -25,6 +25,43 @@ class PaymentSettingsService:
             self.session.refresh(settings)
         return settings
 
+    def wizard_status(self) -> dict[str, str]:
+        """Status wizard per metode bayar, dipakai untuk menentukan metode aktif."""
+        from app.models import PaymentWizardState
+
+        return {
+            row.method: row.status
+            for row in self.session.scalars(select(PaymentWizardState))
+        }
+
+    def enabled_methods(self) -> list[str] | None:
+        """Metode bayar yang aktif, atau None bila belum pernah dikonfigurasi.
+
+        `None` berarti "belum ada pengaturan"; pemanggil (UI) yang menentukan
+        daftar default, supaya daftar metode tidak diduplikasi di dua tempat.
+        """
+        settings = self.session.scalar(
+            select(PaymentSettings).order_by(PaymentSettings.id).limit(1)
+        )
+        if settings is None:
+            return None
+        status = self.wizard_status()
+
+        def ready(method: str) -> bool:
+            return status.get(method) == "active"
+
+        enabled: list[str] = []
+        if settings.cash_enabled:
+            enabled.append("CASH")
+        if settings.qris_dana_enabled and ready("QRIS_DANA"):
+            enabled.append("QRIS_DANA")
+        if settings.qris_midtrans_enabled and ready("QRIS_MIDTRANS"):
+            enabled.append("QRIS_MIDTRANS")
+        if settings.transfer_enabled and ready("BANK"):
+            enabled.append("BANK")
+        return enabled or ["CASH"]
+
+
     def save(
         self,
         actor: User,

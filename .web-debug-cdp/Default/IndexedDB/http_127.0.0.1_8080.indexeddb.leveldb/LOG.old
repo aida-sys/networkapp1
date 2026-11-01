@@ -1,0 +1,7 @@
+2026/10/31-00:06:19.510 2464 Reusing MANIFEST C:\Users\ANJAY SOLUTION\Desktop\PROJECT\.web-debug-cdp\Default\IndexedDB\http_127.0.0.1_8080.indexeddb.leveldb/MANIFEST-000001
+2026/10/31-00:06:19.511 2464 Recovering log #4
+2026/10/31-00:06:19.512 2464 Reusing old log C:\Users\ANJAY SOLUTION\Desktop\PROJECT\.web-debug-cdp\Default\IndexedDB\http_127.0.0.1_8080.indexeddb.leveldb/000004.log 
+2026/10/31-00:06:20.226 3088 Level-0 table #8: started
+2026/10/31-00:06:20.234 3088 Level-0 table #8: 510 bytes OK
+2026/10/31-00:06:20.240 3088 Delete type=0 #4
+2026/10/31-00:06:20.241 3088 Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)

@@ -6,6 +6,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'data/local_database.dart';
 import 'domain/password_hasher.dart';
 import 'domain/pos_repository.dart';
+import 'remote/pos_api_client.dart';
+import 'remote/remote_pos_repository.dart';
+import 'services/app_mode.dart';
 import 'services/billing_client.dart';
 import 'services/billing_config.dart';
 import 'services/trial_service.dart';
@@ -13,6 +16,7 @@ import 'views/auth/auth_state.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/license_view.dart';
 import 'views/auth/setup_owner_view.dart';
+import 'views/settings/lan_setup_view.dart';
 import 'views/owner/dashboard_view.dart';
 import 'views/cashier/cashier_view.dart';
 import 'views/owner/user_management_view.dart';
@@ -34,7 +38,47 @@ final passwordHasherProvider = Provider<PasswordHasher>(
   (ref) => PasswordHasher(),
 );
 
-final repositoryFutureProvider = FutureProvider<PosRepository>((ref) async {
+/// Mode aplikasi (standalone atau LAN). Default standalone.
+final appModeProvider = NotifierProvider<AppModeNotifier, AppModeState>(
+  AppModeNotifier.new,
+);
+
+/// Klien POS LAN. Hanya dibuat saat mode LAN aktif.
+final posApiClientProvider = Provider<PosApiClient>((ref) {
+  final connection = ref.watch(appModeProvider).connection;
+  final client = PosApiClient(baseUrl: connection.baseUrl);
+  ref.onDispose(client.close);
+  return client;
+});
+
+/// Satu titik pemilihan implementasi repository.
+///
+/// - standalone (default): `PosRepository` dengan Drift/SQLite lokal.
+/// - lan: `RemotePosRepository` lewat POS LAN API.
+///
+/// Tidak ada dual-write dan tidak ada fallback diam-diam antar mode.
+final repositoryFutureProvider = FutureProvider<PosRepositoryContract>((ref) async {
+  // Tunggu mode selesai dibaca supaya tidak pernah memilih implementasi dari
+  // nilai default sementara.
+  await ref.read(appModeProvider.notifier).ensureLoaded();
+  final modeState = ref.watch(appModeProvider);
+
+  if (modeState.isLan) {
+    final database = await ref.watch(databaseProvider.future);
+    final client = ref.watch(posApiClientProvider);
+    final store = AppModeStore(ref.watch(secureStorageProvider));
+    final token = await store.readToken();
+    if (token != null && token.isNotEmpty) {
+      client.setToken(token);
+    }
+    client.setDeviceId(modeState.connection.deviceId);
+    return RemotePosRepository(
+      client: client,
+      mapper: database,
+      onToken: store.writeToken,
+    );
+  }
+
   final database = await ref.watch(databaseProvider.future);
   return PosRepository(database, ref.read(passwordHasherProvider));
 });
@@ -181,6 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/license',
         builder: (context, state) => const LicenseView(),
+      ),
+      GoRoute(
+        path: '/connection',
+        builder: (context, state) => const LanSetupView(),
       ),
       GoRoute(
         path: '/',

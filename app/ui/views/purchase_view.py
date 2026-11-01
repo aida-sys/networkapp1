@@ -735,7 +735,7 @@ class PurchaseView(QWidget):
             if payment_status == "DP"
             else 0
         )
-        product = self.session.get(Product, product_id)
+        product = self.service.get_product(self.actor, product_id)
         selling_before = product.selling_price if product is not None else None
         try:
             purchase = self.service.record_purchase(
@@ -784,7 +784,7 @@ class PurchaseView(QWidget):
             )
             return
         purchase_id = self.debt_purchase_ids[row]
-        purchase = self.session.get(PurchaseOrder, purchase_id)
+        purchase = self.service.get_purchase(self.actor, purchase_id)
         if purchase is None:
             QMessageBox.warning(self, "Pembelian tidak ditemukan", "Muat ulang data.")
             self.refresh_data()
@@ -809,14 +809,14 @@ class PurchaseView(QWidget):
                 "Pilih atau siapkan akun Kas/Bank terlebih dahulu.",
             )
             return
-        account = self.session.get(Account, payment_account_id)
+        account = self.service.get_account(self.actor, payment_account_id)
         try:
             self.service.record_payment(
                 self.actor,
                 purchase_id,
                 amount,
                 payment_account_id,
-                "CASH" if account.code == "1000" else "BANK",
+                "CASH" if account is not None and account.code == "1000" else "BANK",
             )
         except (
             AuthorizationError,
@@ -827,7 +827,7 @@ class PurchaseView(QWidget):
             QMessageBox.warning(self, "Status pembayaran tidak berubah", str(exc))
             return
         self.refresh_data()
-        refreshed = self.session.get(PurchaseOrder, purchase_id)
+        refreshed = self.service.get_purchase(self.actor, purchase_id)
         if refreshed is not None and refreshed.paid_amount >= refreshed.subtotal:
             QMessageBox.information(
                 self,

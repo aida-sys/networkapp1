@@ -69,9 +69,10 @@
   </style>
 </head>
 <body>
-<header>
+{% block site_header %}<header>
   <a class="brand" href="/"><img src="/static/A.png" alt="">AnjayRetailSoft</a>
   <nav>
+    <a href="/">Home</a>
     {% if customer %}
       <a href="/dashboard">Dashboard</a>
       {% if customer.is_admin %}<a href="/admin">Admin</a>{% endif %}
@@ -84,10 +85,10 @@
       <a class="btn small" href="/register">Daftar</a>
     {% endif %}
   </nav>
-</header>
-<main>
+</header>{% endblock %}
+{% block page_main %}<main>
 {% block content %}{% endblock %}
-</main>
+</main>{% endblock %}
 <div class="chatbot-toggle">
   <button class="chatbot-btn" id="chatbotToggle" type="button" aria-label="Buka chat AnjaySoft" aria-expanded="false" aria-controls="chatbotWindow">&#128172;</button>
 </div>
@@ -133,6 +134,6 @@
   closeButton.addEventListener("click", () => setOpen(false));
 })();
 </script>
-<footer>AnjayRetailSoft — aktivasi &amp; langganan</footer>
+{% block site_footer %}<footer>AnjayRetailSoft — aktivasi &amp; langganan</footer>{% endblock %}
 </body>
 </html>

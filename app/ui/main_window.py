@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         trial_message: str | None = None,
         licensed: bool = False,
         license_service=None,
+        factory=None,
     ):
         super().__init__(parent)
         self.user = user
@@ -47,7 +48,14 @@ class MainWindow(QMainWindow):
         self.read_only = bool(read_only)
         self.licensed = bool(licensed)
         self.license_service = license_service
-        self.store_settings = StoreSettingsService(self.user_management.session)
+        # `factory` hanya diisi pada mode LAN. Bila None, seluruh view memakai
+        # service lokal seperti sebelumnya (mode standalone).
+        self.factory = factory
+        self.lan_mode = factory is not None
+        if self.lan_mode:
+            self.store_settings = factory.store_settings()
+        else:
+            self.store_settings = StoreSettingsService(self.user_management.session)
         self.store: Store | None = self.store_settings.get_store()
         self.stack = QStackedWidget()
 
@@ -75,11 +83,7 @@ class MainWindow(QMainWindow):
             # Semua bagian/tugas selain OWNER (termasuk input bebas owner)
             # memakai tampilan operasional kasir.
             self.dashboard = None
-            cashier_view = CashierView(
-                user,
-                self.user_management.session,
-                read_only=self.read_only,
-            )
+            cashier_view = self._build_cashier_view(user)
             cashier_view.logout_requested.connect(self.logout_requested.emit)
             self.stack.addWidget(cashier_view)
             self._update_window_branding(0)
@@ -93,6 +97,16 @@ class MainWindow(QMainWindow):
         )
         self.dashboard.logout_requested.connect(self._dashboard_logout)
         self.stack.addWidget(self.dashboard)
+        if role == "OWNER" and self.lan_mode:
+            # Mode LAN v1: jendela operasional kasir saja. Manajemen user,
+            # laporan keuangan, dan pengaturan lanjutan tetap memakai database
+            # pusat tetapi belum punya layar LAN; sengaja tidak dibuat palsu.
+            cashier_view = self._build_cashier_view(user)
+            cashier_view.logout_requested.connect(self.logout_requested.emit)
+            self.stack.addWidget(cashier_view)
+            self.stack.setCurrentWidget(cashier_view)
+            self._update_window_branding(0)
+            return
         if role == "OWNER":
             self.dashboard.manage_users_requested.connect(
                 self.show_user_management
@@ -194,6 +208,57 @@ class MainWindow(QMainWindow):
         # dihancurkan (QThread: Destroyed while running).
         if self.dashboard is not None:
             self.dashboard.shutdown()
+
+    def _build_cashier_view(self, user) -> CashierView:
+        """Bangun CashierView dengan sumber data sesuai mode.
+
+        Pada mode standalone semua argumen None, sehingga CashierView membuat
+        service lokal persis seperti sebelumnya.
+        """
+        if not self.lan_mode:
+            return CashierView(
+                user,
+                self.user_management.session,
+                read_only=self.read_only,
+            )
+        return CashierView(
+            user,
+            None,
+            read_only=self.read_only,
+            sales_service=self.factory.sales(),
+            pricing_service=self.factory.pricing(),
+            shift_service=self.factory.shifts(),
+            master_data_service=self.factory.master_data(),
+            store_settings_service=self.factory.store_settings(),
+            product_repository=self.factory.product_repository(),
+            daily_reports_service=self.factory.daily_reports(),
+            payment_methods_provider=self._lan_payment_methods,
+        )
+
+    def _lan_payment_methods(self) -> list[str]:
+        """Metode bayar pada mode LAN.
+
+        Pengaturan pembayaran (termasuk kredensial QRIS) sengaja tetap di
+        masing-masing perangkat, bukan di server pusat: itu kredensial
+        merchant, bukan data produk. Jadi daftar metode dibaca dari
+        pengaturan lokal perangkat ini.
+        """
+        from app.services.payment_settings_service import PaymentSettingsService
+        from app.ui.views.cashier_view import PaymentDialog
+
+        try:
+            from app.core.database import get_session
+
+            session = get_session()
+            try:
+                configured = PaymentSettingsService(session).enabled_methods()
+            finally:
+                session.close()
+        except Exception:
+            return list(PaymentDialog.ALL_METHODS)
+        if configured is None:
+            return list(PaymentDialog.ALL_METHODS)
+        return configured
 
     def _build_trial_banner(self, message: str) -> QFrame:
         banner = QFrame()

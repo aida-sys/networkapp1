@@ -6,6 +6,8 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.core.logging_config import configure_logging
 from app.core.migrations import upgrade_database
+from app.lan.config import LanConfigError, load_config
+from app.lan.service_factory import ServiceFactory
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.license_service import LicenseService
@@ -28,6 +30,59 @@ class Application:
         self.qt = QApplication([])
         self.qt.setQuitOnLastWindowClosed(True)
         self.qt.setStyleSheet(STYLE_SHEET)
+
+        # Mode dipilih eksplisit. Default standalone: perilaku lama tidak
+        # berubah dan database lokal tetap dipakai seperti sebelumnya.
+        try:
+            self.lan_config = load_config()
+        except LanConfigError as exc:
+            QMessageBox.critical(None, "Konfigurasi mode tidak valid", str(exc))
+            raise SystemExit(1) from exc
+        self.factory = ServiceFactory(self.lan_config)
+        self.lan_mode = self.factory.is_lan
+        logger.info("Mode aplikasi: %s", self.lan_config.mode)
+
+        if self.lan_mode:
+            self._start_lan_mode()
+        else:
+            self._start_standalone_mode()
+
+        self.login = LoginView(
+            self.auth,
+            self.store_settings.get_store(),
+            setup_service=self.owner_setup,
+        )
+        self.window = None
+        self.license_view = None
+        self.read_only = False
+        self.login.login_success.connect(self.on_login)
+        licensed, status = self.license_service.license_status()
+        if licensed:
+            logger.info(status)
+            self.login.show()
+        else:
+            trial_active, trial_message = self.trial_service.status()
+            if trial_active:
+                logger.info("POS running in trial mode: %s", trial_message)
+                self.login.set_trial_status(trial_message)
+                self.login.show()
+            else:
+                logger.info("POS license required: %s %s", status, trial_message)
+                self.license_view = LicenseView(
+                    self.license_service,
+                    status_message=f"{status} {trial_message}",
+                    allow_read_only=True,
+                )
+                self.license_view.license_activated.connect(
+                    self.on_license_activated
+                )
+                self.license_view.read_only_requested.connect(
+                    self.on_read_only_requested
+                )
+                self.license_view.show()
+
+    def _start_standalone_mode(self):
+        """Jalur lama: migrasi database lokal lalu buka Session."""
         try:
             upgrade_database()
         except Exception as exc:
@@ -68,39 +123,29 @@ class Application:
         self.trial_service = TrialService(
             settings.data_dir, duration=trial_duration
         )
-        self.login = LoginView(
-            self.auth,
-            self.store_settings.get_store(),
-            setup_service=self.owner_setup,
+
+    def _start_lan_mode(self):
+        """Mode LAN: tidak ada engine database lokal yang dibuka.
+
+        Semua data POS berasal dari server pusat. Lisensi dan trial tetap
+        memakai file lokal karena itu urusan aktivasi, bukan data produk.
+        """
+        logger.info("Mode LAN aktif: %s", self.lan_config.api_url)
+        self.session = None
+        self.user_repository = None
+        self.owner_setup = None
+        self.user_management = None
+        self.auth = self.factory.auth()
+        self.store_settings = self.factory.store_settings()
+        self.license_service = LicenseService(settings.data_dir)
+        from datetime import timedelta
+
+        trial_duration = default_trial_duration()
+        if settings.trial_minutes:
+            trial_duration = timedelta(minutes=settings.trial_minutes)
+        self.trial_service = TrialService(
+            settings.data_dir, duration=trial_duration
         )
-        self.window = None
-        self.license_view = None
-        self.read_only = False
-        self.login.login_success.connect(self.on_login)
-        licensed, status = self.license_service.license_status()
-        if licensed:
-            logger.info(status)
-            self.login.show()
-        else:
-            trial_active, trial_message = self.trial_service.status()
-            if trial_active:
-                logger.info("POS running in trial mode: %s", trial_message)
-                self.login.set_trial_status(trial_message)
-                self.login.show()
-            else:
-                logger.info("POS license required: %s %s", status, trial_message)
-                self.license_view = LicenseView(
-                    self.license_service,
-                    status_message=f"{status} {trial_message}",
-                    allow_read_only=True,
-                )
-                self.license_view.license_activated.connect(
-                    self.on_license_activated
-                )
-                self.license_view.read_only_requested.connect(
-                    self.on_read_only_requested
-                )
-                self.license_view.show()
 
     def _close_license_view(self):
         if self.license_view is not None:
@@ -152,7 +197,7 @@ class Application:
             return False
         username = self._username_from_email(email)
         try:
-            if self.owner_setup.setup_required():
+            if not self.lan_mode and self.owner_setup.setup_required():
                 full_name = store_name or username
                 user = self.owner_setup.create_owner(
                     username=username,
@@ -213,7 +258,7 @@ class Application:
         return trial_message if trial_active else None
 
     def on_login(self, user):
-        logger.info("Login succeeded (read_only=%s)", self.read_only)
+        logger.info("Login succeeded (read_only=%s, lan=%s)", self.read_only, self.lan_mode)
         trial_message = self._trial_banner_message()
         licensed, _ = self.license_service.license_status()
         self.window = MainWindow(
@@ -223,6 +268,7 @@ class Application:
             trial_message=trial_message,
             licensed=licensed,
             license_service=self.license_service,
+            factory=self.factory if self.lan_mode else None,
         )
         self.window.logout_requested.connect(self.on_logout)
         self.window.activation_requested.connect(self.on_activation_requested)
@@ -273,8 +319,9 @@ class Application:
             self.window.hide()
             self.window.deleteLater()
             self.window = None
-        self.session.rollback()
-        self.session.expire_all()
+        if self.session is not None:
+            self.session.rollback()
+            self.session.expire_all()
         self.login.reset()
         self.login.show()
 
@@ -282,7 +329,9 @@ class Application:
         try:
             return self.qt.exec()
         finally:
-            self.session.close()
+            if self.session is not None:
+                self.session.close()
+            self.factory.close()
             logger.info("POS application stopped")
 
 

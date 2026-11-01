@@ -5,31 +5,15 @@ import 'package:sqlite3/common.dart' show SqliteException;
 
 import '../data/local_database.dart';
 import 'password_hasher.dart';
+import 'pos_repository_contract.dart';
 
-class CartItemInput {
-  const CartItemInput({required this.productId, required this.quantity});
+// `CartItemInput` dan `CheckoutResult` didefinisikan di kontrak supaya kedua
+// implementasi (lokal dan LAN) memakai tipe yang sama. Re-export di sini
+// menjaga semua import lama tetap bekerja tanpa perubahan.
+export 'pos_repository_contract.dart'
+    show CartItemInput, CheckoutResult, PosRepositoryContract;
 
-  final int productId;
-  final int quantity;
-}
-
-class CheckoutResult {
-  const CheckoutResult({
-    required this.saleId,
-    required this.invoiceNo,
-    required this.total,
-    required this.change,
-    required this.wasExisting,
-  });
-
-  final int saleId;
-  final String invoiceNo;
-  final int total;
-  final int change;
-  final bool wasExisting;
-}
-
-class PosRepository {
+class PosRepository implements PosRepositoryContract {
   PosRepository(this.database, this.passwordHasher);
 
   final KasirinDatabase database;
@@ -41,12 +25,14 @@ class PosRepository {
         variables.map((variable) => variable.value).toList(),
       );
 
+  @override
   Future<bool> setupRequired() async =>
       await database
           .customSelect('SELECT id FROM users LIMIT 1')
           .getSingleOrNull() ==
       null;
 
+  @override
   Future<int> createOwner({
     required String username,
     required String fullName,
@@ -132,6 +118,7 @@ class PosRepository {
 
   /// Adds a small, clearly marked data set to this device's local database.
   /// Safe to call more than once: the demo SKU is used as the seed marker.
+  @override
   Future<void> seedDemoData(int ownerId) async {
     final marker = await database
         .customSelect("SELECT id FROM products WHERE sku = 'DEMO-BRS-001'")
@@ -445,6 +432,7 @@ class PosRepository {
     });
   }
 
+  @override
   Future<QueryRow> login(String username, String password) async {
     final normalizedUsername = username.trim();
     final row = await database
@@ -526,6 +514,7 @@ class PosRepository {
         .read<int>('id');
   }
 
+  @override
   Future<QueryRow?> openShiftFor(int cashierId) async => database
       .customSelect(
         "SELECT * FROM shifts WHERE cashier_id = ? AND status = 'OPEN' AND closed_at IS NULL ORDER BY id DESC LIMIT 1",
@@ -533,6 +522,7 @@ class PosRepository {
       )
       .getSingleOrNull();
 
+  @override
   Future<int> unitPriceFor(int productId, int quantity) async {
     if (quantity <= 0) throw StateError('Qty harus lebih dari 0.');
     final product = await database
@@ -545,6 +535,7 @@ class PosRepository {
     return _unitPrice(product.read<int>('selling_price'), productId, quantity);
   }
 
+  @override
   Future<List<QueryRow>> products({String search = ''}) => database
       .customSelect(
         '''SELECT products.*, categories.name AS category_name
@@ -561,6 +552,7 @@ class PosRepository {
       )
       .get();
 
+  @override
   Future<int> createProduct({
     required String sku,
     required String name,
@@ -652,6 +644,7 @@ class PosRepository {
     });
   }
 
+  @override
   Future<List<QueryRow>> getSpecialPriceRules() => database.customSelect(
     '''SELECT bulk_price_rules.*, products.name AS product_name,
               products.sku AS product_sku, products.selling_price AS regular_price
@@ -662,6 +655,7 @@ class PosRepository {
        ORDER BY products.name, bulk_price_rules.quantity_threshold''',
   ).get();
 
+  @override
   Future<void> saveSpecialPriceRule({
     int? ruleId,
     required int productId,
@@ -757,17 +751,20 @@ class PosRepository {
     }
   }
 
+  @override
   Future<void> deleteSpecialPriceRule(int ruleId) => _statement(
     'DELETE FROM bulk_price_rules WHERE id = ?',
     [Variable.withInt(ruleId)],
   );
 
+  @override
   Future<List<QueryRow>> getSuppliers() => database
       .customSelect(
         'SELECT * FROM suppliers WHERE deleted_at IS NULL ORDER BY name',
       )
       .get();
 
+  @override
   Future<int> createSupplier({
     required String name,
     String? phone,
@@ -797,6 +794,7 @@ class PosRepository {
         .read<int>('id');
   }
 
+  @override
   Future<void> updateSupplier({
     required int supplierId,
     required String name,
@@ -827,6 +825,7 @@ class PosRepository {
     );
   }
 
+  @override
   Future<List<QueryRow>> getPurchaseOrders() => database.customSelect(
     '''SELECT purchase_orders.*, suppliers.name AS supplier_name,
               suppliers.phone AS supplier_phone, users.full_name AS creator_name,
@@ -982,6 +981,7 @@ class PosRepository {
     });
   }
 
+  @override
   Future<int> completePurchase({
     int? supplierId,
     String? newSupplierName,
@@ -1098,6 +1098,7 @@ class PosRepository {
     });
   }
 
+  @override
   Future<void> receivePurchaseOrder({
     required int orderId,
     required int actorId,
@@ -1192,6 +1193,7 @@ class PosRepository {
     });
   }
 
+  @override
   Future<int> payPurchaseOrder({
     required int orderId,
     required int amount,
@@ -1265,12 +1267,14 @@ class PosRepository {
     });
   }
 
+  @override
   Future<List<QueryRow>> getStockReport() => database.customSelect(
     '''SELECT id, sku, name, stock_qty, min_stock, purchase_price, selling_price
        FROM products WHERE deleted_at IS NULL AND is_active = 1
        ORDER BY CASE WHEN stock_qty <= min_stock THEN 0 ELSE 1 END, name''',
   ).get();
 
+  @override
   Future<Map<String, dynamic>> getFinancialReport() async {
     final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     final period = await database
@@ -1331,6 +1335,7 @@ class PosRepository {
     };
   }
 
+  @override
   Future<List<QueryRow>> getShiftHistory({int limit = 30}) => database
       .customSelect(
         '''SELECT shifts.*, users.full_name AS cashier_name,
@@ -1345,6 +1350,7 @@ class PosRepository {
       )
       .get();
 
+  @override
   Future<Map<String, bool>> getPaymentSettings() async {
     final row = await database
         .customSelect('SELECT * FROM payment_settings ORDER BY id LIMIT 1')
@@ -1357,6 +1363,7 @@ class PosRepository {
     };
   }
 
+  @override
   Future<void> savePaymentSettings(Map<String, bool> settings) async {
     if (settings.values.every((enabled) => !enabled)) {
       throw StateError('Aktifkan minimal satu metode pembayaran.');
@@ -1392,6 +1399,7 @@ class PosRepository {
     }
   }
 
+  @override
   Future<int?> openShift({
     required int cashierId,
     required int openingCash,
@@ -1429,6 +1437,7 @@ class PosRepository {
         .read<int>('id');
   }
 
+  @override
   Future<CheckoutResult> checkout({
     required String invoiceNo,
     required int cashierId,
@@ -1751,6 +1760,7 @@ class PosRepository {
 
   static String _now() => DateTime.now().toUtc().toIso8601String();
 
+  @override
   Future<void> closeShift({
     required int shiftId,
     required int cashierId,
@@ -1771,11 +1781,13 @@ class PosRepository {
     );
   }
 
+  @override
   Future<List<QueryRow>> getUsers() =>
       database.customSelect('''SELECT users.*, roles.name AS role_name
        FROM users JOIN roles ON roles.id = users.role_id
        WHERE users.deleted_at IS NULL ORDER BY users.id''').get();
 
+  @override
   Future<int> addUser({
     required String username,
     required String fullName,
@@ -1835,6 +1847,7 @@ class PosRepository {
     }
   }
 
+  @override
   Future<void> updateUser({
     required int userId,
     required String username,
@@ -1924,6 +1937,7 @@ class PosRepository {
     }
   }
 
+  @override
   Future<void> setUserActive({
     required int userId,
     required int actorId,
@@ -1965,6 +1979,7 @@ class PosRepository {
   }
 
   /// Soft-deletes a staff account so sales, shifts, and audit history remain linked.
+  @override
   Future<void> deleteUser({required int userId, required int actorId}) async {
     if (userId == actorId) {
       throw StateError('Akun yang sedang digunakan tidak dapat dihapus.');
@@ -2000,12 +2015,14 @@ class PosRepository {
     );
   }
 
+  @override
   Future<QueryRow?> getStore() => database
       .customSelect(
         'SELECT * FROM stores WHERE deleted_at IS NULL ORDER BY id LIMIT 1',
       )
       .getSingleOrNull();
 
+  @override
   Future<void> updateStore({
     required String name,
     String? slogan,
@@ -2064,6 +2081,7 @@ class PosRepository {
     }
   }
 
+  @override
   Future<void> updateOwnerName({
     required int userId,
     required String fullName,
@@ -2080,6 +2098,7 @@ class PosRepository {
     );
   }
 
+  @override
   Future<Map<String, dynamic>> getDashboardStats() async {
     final productCountRow = await database
         .customSelect(
@@ -2127,6 +2146,7 @@ class PosRepository {
     };
   }
 
+  @override
   Future<List<QueryRow>> getRecentSales({int limit = 10}) => database
       .customSelect(
         '''SELECT sales.*, users.full_name AS cashier_name
@@ -2137,6 +2157,7 @@ class PosRepository {
       )
       .get();
 
+  @override
   Future<void> deleteProduct(int productId) async {
     final now = _now();
     await _statement(

@@ -39,6 +39,13 @@ class MasterDataService:
             )
         )
 
+    def get_product(self, product_id: int) -> Product | None:
+        """Ambil satu produk aktif. Dipakai UI kasir tanpa memegang Session."""
+        product = self.session.get(Product, product_id)
+        if product is None or product.deleted_at is not None:
+            return None
+        return product
+
     def list_products(self) -> list[Product]:
         return list(
             self.session.scalars(
@@ -293,6 +300,50 @@ class MasterDataService:
                 stock_after=stock_after,
                 reference_type="MANUAL",
                 note="Penambahan stok manual dari Master Data.",
+            )
+        )
+        try:
+            self.session.commit()
+            self.session.refresh(product)
+        except Exception:
+            self.session.rollback()
+            raise
+        return product
+
+    def adjust_stock(self, actor: User, product_id: int, quantity: int) -> Product:
+        """Penyesuaian stok dua arah, selalu tercatat sebagai StockMovement.
+
+        `add_stock()` sengaja tidak diubah karena UI Master Data hanya menambah.
+        Mode LAN butuh koreksi turun juga (barang rusak/hilang), dan itu harus
+        tetap meninggalkan jejak audit, bukan update diam-diam.
+        """
+        self._require_owner(actor)
+        if quantity == 0:
+            raise ValidationError("Jumlah penyesuaian stok tidak boleh nol.")
+
+        product = self.session.get(Product, product_id)
+        if product is None or product.deleted_at is not None:
+            raise ValidationError("Produk yang akan disesuaikan stoknya tidak ditemukan.")
+
+        stock_before = product.stock_qty
+        stock_after = stock_before + quantity
+        if stock_after < 0:
+            raise ValidationError(
+                f"Stok {product.name} tidak mencukupi untuk penyesuaian ini."
+            )
+        if stock_after > 2_000_000_000:
+            raise ValidationError("Jumlah stok melebihi batas maksimum.")
+
+        product.stock_qty = stock_after
+        self.session.add(
+            StockMovement(
+                product_id=product.id,
+                movement_type="STOCK_ADJUSTMENT",
+                stock_before=stock_before,
+                qty=quantity,
+                stock_after=stock_after,
+                reference_type="MANUAL",
+                note="Penyesuaian stok manual (mode LAN).",
             )
         )
         try:

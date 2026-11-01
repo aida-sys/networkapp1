@@ -319,6 +319,16 @@ class PurchaseService:
             payment_method,
         )
 
+    def get_purchase(self, actor: User, purchase_id: int) -> PurchaseOrder | None:
+        """Ambil satu pembelian. Dipakai UI tanpa memegang Session langsung."""
+        self._require_owner(actor)
+        return self.session.get(PurchaseOrder, purchase_id)
+
+    def get_account(self, actor: User, account_id: int) -> Account | None:
+        """Akun kas/bank untuk pembayaran hutang pembelian."""
+        self._require_owner(actor)
+        return self.session.get(Account, account_id)
+
     @staticmethod
     def _require_owner(actor: User):
         if actor.role.name.upper() != "OWNER":

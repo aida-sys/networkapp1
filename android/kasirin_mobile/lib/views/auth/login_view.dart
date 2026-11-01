@@ -261,6 +261,16 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           ),
                         ),
                       ),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => context.go('/connection'),
+                          icon: const Icon(Icons.lan_outlined, size: 16),
+                          label: const Text(
+                            'Koneksi Server LAN',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -41,13 +41,16 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.exceptions import POSException
 from app.hardware.printer import ReceiptPrinter
-from app.models import Product, Sale, Store
+from app.models import Sale
 from app.repositories.product_repository import ProductRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.services.sales_service import SalesService
 from app.services.bulk_pricing_service import BulkPricingService
 from app.services.cashier_daily_report_service import CashierDailyReportService
+from app.services.master_data_service import MasterDataService
+from app.services.payment_settings_service import PaymentSettingsService
 from app.services.shift_service import ShiftService
+from app.services.store_settings_service import StoreSettingsService
 from app.services.payment_service import PaymentService, PaymentServiceError
 from app.utils.formatters import rupiah
 from app.ui.widgets import TableSearchBar, create_copyright_label
@@ -56,16 +59,42 @@ from app.ui.widgets import TableSearchBar, create_copyright_label
 class CashierView(QWidget):
     logout_requested = Signal()
 
-    def __init__(self, user, session, parent=None, *, read_only=False):
+    def __init__(
+        self,
+        user,
+        session,
+        parent=None,
+        *,
+        read_only=False,
+        sales_service=None,
+        pricing_service=None,
+        shift_service=None,
+        master_data_service=None,
+        store_settings_service=None,
+        payment_methods_provider=None,
+        product_repository=None,
+        daily_reports_service=None,
+    ):
         super().__init__(parent)
         self.user = user
         self.session = session
         self.read_only = bool(read_only)
-        self.products = ProductRepository(session)
-        self.sales = SalesService(session, transaction_locked=self.read_only)
-        self.bulk_pricing = BulkPricingService(session)
-        self.daily_reports = CashierDailyReportService(session)
-        self.shift_service = ShiftService(session, ShiftRepository(session))
+        self.products = product_repository or ProductRepository(session)
+        self.sales = sales_service or SalesService(
+            session, transaction_locked=self.read_only
+        )
+        self.bulk_pricing = pricing_service or BulkPricingService(session)
+        self.daily_reports = daily_reports_service or CashierDailyReportService(session)
+        self.shift_service = shift_service or ShiftService(
+            session, ShiftRepository(session)
+        )
+        # Service dipakai supaya view tidak lagi memegang Session untuk baca
+        # produk/pengaturan pembayaran/toko. Ini yang membuat mode LAN bisa
+        # mengganti sumber data tanpa mengubah UI.
+        self.master_data = master_data_service or MasterDataService(session)
+        self.payment_settings = PaymentSettingsService(session)
+        self.store_settings = store_settings_service or StoreSettingsService(session)
+        self._payment_methods_provider = payment_methods_provider
         self.receipt_printer = ReceiptPrinter()
         self.payment_service = PaymentService()
         self.cart = {}
@@ -358,7 +387,7 @@ class CashierView(QWidget):
             return
 
         product_id = int(self.product_table.item(row, 6).text())
-        product = self.session.get(Product, product_id)
+        product = self.master_data.get_product(product_id)
         if product is None:
             self.status_label.setText("Produk tidak ditemukan lagi.")
             self._search_products()
@@ -719,37 +748,15 @@ class CashierView(QWidget):
             self._show_error("Gagal mencetak struk", str(exc))
 
     def _enabled_payment_methods(self) -> list[str]:
-        from app.models import PaymentSettings, PaymentWizardState
-
+        if self._payment_methods_provider is not None:
+            return list(self._payment_methods_provider())
         try:
-            settings = (
-                self.session.query(PaymentSettings)
-                .order_by(PaymentSettings.id)
-                .first()
-            )
-            wizard_status = {
-                row.method: row.status
-                for row in self.session.query(PaymentWizardState).all()
-            }
+            configured = self.payment_settings.enabled_methods()
         except SQLAlchemyError:
-            settings = None
-            wizard_status = {}
-        if settings is None:
             return list(PaymentDialog.ALL_METHODS)
-
-        def ready(method: str) -> bool:
-            return wizard_status.get(method) == "active"
-
-        enabled: list[str] = []
-        if settings.cash_enabled:
-            enabled.append("CASH")
-        if settings.qris_dana_enabled and ready("QRIS_DANA"):
-            enabled.append("QRIS_DANA")
-        if settings.qris_midtrans_enabled and ready("QRIS_MIDTRANS"):
-            enabled.append("QRIS_MIDTRANS")
-        if settings.transfer_enabled and ready("BANK"):
-            enabled.append("BANK")
-        return enabled or ["CASH"]
+        if configured is None:
+            return list(PaymentDialog.ALL_METHODS)
+        return configured
 
     def _checkout_qris(self, total: int):
         import uuid
@@ -845,7 +852,7 @@ class CashierView(QWidget):
         amount: int,
         change: int,
     ) -> dict:
-        store = self.session.get(Store, sale.store_id)
+        store = self.store_settings.get_store()
         if store is None:
             raise RuntimeError("Data toko untuk struk tidak ditemukan.")
         payment_names = {

@@ -1,0 +1,14 @@
+# Data runtime server LAN: tidak boleh masuk repo.
+#
+# `jwt_secret.key` adalah kunci penandatangan token. Bila ikut ter-commit,
+# siapa pun yang bisa membaca repo dapat membuat token akses sendiri.
+# `pos_lan.db` berisi data transaksi toko yang sebenarnya.
+data/
+*.db
+*.db-shm
+*.db-wal
+*.key
+backups/
+
+__pycache__/
+*.py[cod]

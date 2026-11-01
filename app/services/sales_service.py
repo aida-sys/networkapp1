@@ -151,6 +151,85 @@ class SalesService:
             self.session.rollback()
             raise
 
+    def quote(self, items: list[dict]) -> tuple[int, list[dict]]:
+        """Hitung harga satuan dan total dari database, bukan dari klien.
+
+        Dipakai mode LAN: klien hanya mengirim product_id, qty, dan discount.
+        Mengembalikan (subtotal, baris ternormalisasi).
+        """
+        if not items:
+            raise ValueError("Keranjang penjualan masih kosong.")
+
+        subtotal = 0
+        normalized: list[dict] = []
+        for item in items:
+            product = self.session.get(Product, int(item["product_id"]))
+            if product is None:
+                raise ValueError("Produk tidak ditemukan.")
+            if not product.is_active or product.deleted_at is not None:
+                raise ValueError(f"Produk {product.name} sudah tidak aktif.")
+
+            qty = int(item["qty"])
+            if qty <= 0:
+                raise ValueError("Qty harus lebih dari 0.")
+
+            discount = int(item.get("discount", 0))
+            if discount < 0:
+                raise ValueError("Diskon tidak boleh negatif.")
+
+            unit_price = self.bulk_pricing.unit_price(product, qty)
+            line_total = (qty * unit_price) - discount
+            if line_total < 0:
+                raise ValueError("Diskon item melebihi nilai barang.")
+
+            subtotal += line_total
+            normalized.append(
+                {
+                    "product_id": product.id,
+                    "qty": qty,
+                    "unit_price": unit_price,
+                    "discount": discount,
+                    "line_total": line_total,
+                }
+            )
+        return subtotal, normalized
+
+    def create_and_checkout(
+        self,
+        *,
+        cashier_id: int,
+        shift_id: int,
+        items: list[dict],
+        payments: list[dict],
+        customer_id: int | None = None,
+        discount: int = 0,
+        tax: int = 0,
+    ):
+        """Bangun Sale dari harga server lalu jalankan checkout atomik.
+
+        Ini jalur yang dipakai POS LAN API. `checkout()` tetap tidak berubah
+        sehingga mode standalone berperilaku persis seperti sebelumnya.
+        """
+        store_id = self.session.get(Shift, shift_id).store_id
+        subtotal, normalized = self.quote(items)
+        grand_total = subtotal - int(discount) + int(tax)
+        if grand_total < 0:
+            raise ValueError("Total transaksi tidak boleh negatif.")
+
+        sale = Sale(
+            invoice_no=self.new_invoice_number(),
+            store_id=store_id,
+            shift_id=shift_id,
+            cashier_id=cashier_id,
+            customer_id=customer_id,
+            subtotal=subtotal,
+            discount=int(discount),
+            tax=int(tax),
+            grand_total=grand_total,
+            status="PAID",
+        )
+        return self.checkout(sale, normalized, payments)
+
     def daily_sales(self, on_date: date | None = None) -> list[Sale]:
         target_date = on_date or date.today()
         local_start = datetime.combine(target_date, time.min).astimezone(timezone.utc)

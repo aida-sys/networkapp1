@@ -19,6 +19,25 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; }
+    #kasirin-web-status {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: #101827;
+      color: #e2e8f0;
+      font: 16px/1.5 system-ui, sans-serif;
+      text-align: center;
+    }
+    #kasirin-web-status[hidden] { display: none; }
+    #kasirin-web-status strong { color: #62d8f0; font-size: 20px; }
+    #kasirin-web-detail { max-width: 560px; color: #cbd5e1; }
+  </style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +52,48 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="kasirin-web-status" role="status" aria-live="polite">
+    <strong>Kasirin sedang dimuat...</strong>
+    <span id="kasirin-web-detail">Mohon tunggu sebentar.</span>
+  </div>
+  <script>
+    (() => {
+      const panel = document.getElementById('kasirin-web-status');
+      const detail = document.getElementById('kasirin-web-detail');
+      let failed = false;
+
+      const showError = (message) => {
+        failed = true;
+        detail.textContent = message;
+        panel.hidden = false;
+      };
+      const hideWhenFlutterStarts = () => {
+        if (document.querySelector('flt-glass-pane, flutter-view')) {
+          panel.hidden = true;
+          observer.disconnect();
+        }
+      };
+      const observer = new MutationObserver(hideWhenFlutterStarts);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+
+      if (window.location.protocol === 'file:') {
+        showError('Jangan buka index.html langsung. Jalankan build melalui server HTTP/HTTPS, misalnya: python -m http.server 8080 --directory build/web, lalu buka http://localhost:8080.');
+      } else {
+        window.setTimeout(() => {
+          if (!failed && !document.querySelector('flt-glass-pane, flutter-view')) {
+            showError('Flutter belum berhasil dimuat. Periksa Console browser untuk detail error, lalu pastikan seluruh file build web disajikan dari folder yang sama.');
+          }
+        }, 15000);
+      }
+
+      window.addEventListener('error', (event) => {
+        if (event.message) showError(`Gagal memuat Flutter: ${event.message}`);
+      });
+      window.addEventListener('unhandledrejection', (event) => {
+        showError(`Gagal memulai aplikasi: ${String(event.reason)}`);
+      });
+    })();
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -41,6 +102,6 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js" async onerror="document.getElementById('kasirin-web-status').hidden = false; document.getElementById('kasirin-web-detail').textContent = 'File flutter_bootstrap.js tidak ditemukan. Sajikan seluruh isi folder build/web melalui server HTTP/HTTPS.';"></script>
 </body>
 </html>
