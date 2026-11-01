@@ -205,7 +205,8 @@ def test_admin_upload_and_download_installer(admin_client, tmp_path):
     download = admin_client.get("/download/installer")
     assert download.status_code == 200, download.text
     assert download.content == b"fake-exe-content"
-    assert download.headers["content-disposition"].endswith('windows.exe"')
+    # Nama unduhan dibranding "Kasirin" oleh installer_download_filename().
+    assert download.headers["content-disposition"].endswith('Kasirin.exe"')
 
     platform_download = admin_client.get("/download/installer/windows")
     assert platform_download.status_code == 200

@@ -8,12 +8,30 @@ from __future__ import annotations
 
 import os
 import secrets
+import sys
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-LAN_DIR = PROJECT_ROOT / "lan_server"
+
+def _is_frozen() -> bool:
+    """True bila berjalan dari hasil PyInstaller (bukan dari source)."""
+    return bool(getattr(sys, "frozen", False))
+
+
+if _is_frozen():
+    # Build installer: kode berada di dalam exe, jadi tidak ada folder repo.
+    # Database TIDAK boleh ditulis di sebelah exe karena Program Files hanya
+    # bisa ditulis oleh admin. Pakai folder pengguna yang selalu bisa ditulis
+    # dan tidak hilang saat upgrade.
+    PROJECT_ROOT = Path(sys.executable).resolve().parent
+    _LOCALAPPDATA = os.environ.get("LOCALAPPDATA") or str(Path.home())
+    DATA_ROOT = Path(_LOCALAPPDATA) / "KasirinServer"
+    LAN_DIR = DATA_ROOT
+else:
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+    LAN_DIR = PROJECT_ROOT / "lan_server"
+    DATA_ROOT = LAN_DIR / "data"
 
 
 class LanSettings(BaseSettings):
@@ -59,7 +77,7 @@ class LanSettings(BaseSettings):
 
     @property
     def data_dir(self) -> Path:
-        path = LAN_DIR / "data"
+        path = DATA_ROOT / "data" if _is_frozen() else LAN_DIR / "data"
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -86,7 +104,6 @@ class LanSettings(BaseSettings):
         if not path.is_absolute():
             path = PROJECT_ROOT / path
         return path if path.is_dir() else None
-
     @property
     def allowed_origins(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]

@@ -9,6 +9,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 APP_VERSION = "0.5.0"
 
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.code_signing import sign_or_warn  # noqa: E402
+
 
 def find_inno_setup_compiler() -> Path:
     configured_path = os.environ.get("ISCC")
@@ -85,9 +90,17 @@ def main() -> None:
         cwd=PROJECT_ROOT,
         check=True,
     )
-    installer = output_dir / "AnjayRetailSoft.exe"
+    # installer.iss memakai OutputBaseFilename=Kasirin, jadi hasilnya Kasirin.exe.
+    # Nama ini harus sama dengan yang disajikan server billing lewat
+    # installer_download_filename() di server/app/main.py.
+    installer = output_dir / "Kasirin.exe"
     if not installer.is_file():
         raise FileNotFoundError(f"Hasil build installer tidak ditemukan: {installer}")
+
+    # Installer adalah file yang diunduh pelanggan, jadi yang paling penting
+    # ditandatangani. POS.exe sudah ditandatangani di scripts/build.py.
+    sign_or_warn([installer])
+
     print(f"Installer selesai: {installer}")
     print("Database pengguna tetap disimpan di %LOCALAPPDATA%\\POSApp\\data.")
 

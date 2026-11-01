@@ -83,21 +83,25 @@ class _ReportTab(QWidget):
 
 
 class IncomeReportView(_ReportTab):
-    """Tab "Pendapatan": semua transaksi penjualan, terbaru dulu.
+    """Tab "Pendapatan": rekap penjualan atau daftar transaksi.
 
-    Default menampilkan seluruh transaksi PAID diurutkan descending
-    (terbaru pada atas). Kotak pencarian mendukung filter bahasa alami
-    Indonesia, contoh:
+    Dua cara melihat data yang sama, dipilih lewat dropdown "Tampilan":
 
-      - "senin"           → hari Senin
-      - "tahun 2025"      → tahun 2025
-      - "bulan januari"   → bulan Januari
-      - "tanggal 15"      → tanggal 15
-      - "jam 14"          → pukul 14.00-14.59
-      - "hari senin tahun 2025" → gabungan filter
-      - "senin 2025 bulan desember jam 10" → gabungan lengkap
+      - Harian / Bulanan / Tahunan : rekap (periode, jumlah transaksi, total)
+        memakai ReportService.sales_summary(). Cocok untuk pemilik toko yang
+        ingin "bulan ini berapa" tanpa mengetik apa pun.
+      - Daftar transaksi : seluruh transaksi PAID, terbaru dulu, dengan kotak
+        pencarian bahasa alami Indonesia, contoh:
 
-    Kombinasi bebas; kolom yang tidak disebutkan diabaikan.
+          - "senin"           -> hari Senin
+          - "tahun 2025"      -> tahun 2025
+          - "bulan januari"   -> bulan Januari
+          - "tanggal 15"      -> tanggal 15
+          - "jam 14"          -> pukul 14.00-14.59
+          - "hari senin tahun 2025" -> gabungan filter
+          - "senin 2025 bulan desember jam 10" -> gabungan lengkap
+
+        Kombinasi bebas; kolom yang tidak disebutkan diabaikan.
     """
 
     _HARI = {
@@ -110,6 +114,8 @@ class IncomeReportView(_ReportTab):
         "september": 9, "oktober": 10, "november": 11, "desember": 12,
     }
 
+    _MODE_LIST = "list"
+
     def __init__(self, session, parent=None):
         super().__init__(parent)
         self.report_service = ReportService(session)
@@ -117,6 +123,19 @@ class IncomeReportView(_ReportTab):
         controls = QHBoxLayout()
         controls.setContentsMargins(0, 0, 0, 0)
         controls.setSpacing(10)
+
+        controls.addWidget(QLabel("Tampilan"))
+        self.period_mode = QComboBox()
+        # Indeks 0-2 = rekap harian/bulanan/tahunan (dipakai test dan
+        # menjadi tampilan default). Indeks 3 = daftar transaksi.
+        self.period_mode.addItem("Harian (rekap)", "day")
+        self.period_mode.addItem("Bulanan (rekap)", "month")
+        self.period_mode.addItem("Tahunan (rekap)", "year")
+        self.period_mode.addItem("Daftar transaksi", self._MODE_LIST)
+        self.period_mode.setFixedWidth(190)
+        self.period_mode.currentIndexChanged.connect(self.refresh_report)
+        controls.addWidget(self.period_mode)
+
         controls.addWidget(QLabel("Cari / filter"))
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText(
@@ -128,6 +147,7 @@ class IncomeReportView(_ReportTab):
         controls.addStretch(1)
         self.root.insertLayout(0, controls)
 
+        self._sync_filter_enabled()
         self.refresh_report()
 
     def _parse_filter(self, text: str) -> dict:
@@ -173,7 +193,63 @@ class IncomeReportView(_ReportTab):
 
         return result
 
+    def _sync_filter_enabled(self) -> None:
+        """Kotak filter hanya berlaku untuk daftar transaksi.
+
+        Pada mode rekap, filter bahasa alami tidak dipakai karena rekap
+        dikelompokkan per periode. Menonaktifkannya mencegah pemilik toko
+        mengetik filter lalu bingung karena tabel tidak berubah.
+        """
+        is_list = self.period_mode.currentData() == self._MODE_LIST
+        self.filter_input.setEnabled(is_list)
+        self.filter_input.setPlaceholderText(
+            "Contoh: hari senin tahun 2025, bulan januari jam 10, tanggal 15"
+            if is_list
+            else "Filter hanya untuk mode Daftar transaksi"
+        )
+
     def refresh_report(self) -> None:
+        self._sync_filter_enabled()
+        if self.period_mode.currentData() == self._MODE_LIST:
+            self._refresh_list()
+        else:
+            self._refresh_summary()
+
+    def _refresh_summary(self) -> None:
+        """Rekap penjualan per hari/bulan/tahun."""
+        period = self.period_mode.currentData()
+        try:
+            rows = self.report_service.sales_summary(period)
+        except (ValueError, SQLAlchemyError) as exc:
+            self._set_headers(["Periode", "Transaksi", "Total (Rp)"])
+            self.summary_label.setText("")
+            self._set_status("error", f"Gagal memuat laporan: {exc}")
+            return
+
+        self._set_headers(["Periode", "Transaksi", "Total (Rp)"])
+        self._fill_rows(
+            [
+                (
+                    row["period"],
+                    row["transactions"],
+                    rupiah(row["revenue"]),
+                )
+                for row in rows
+            ]
+        )
+        if rows:
+            transactions = sum(row["transactions"] for row in rows)
+            revenue = sum(row["revenue"] for row in rows)
+            self._set_status("muted", "")
+            self.summary_label.setText(
+                f"{transactions} transaksi · total {rupiah(revenue)}"
+            )
+        else:
+            self.summary_label.setText("")
+            self._set_status("muted", "Belum ada transaksi lunas.")
+
+    def _refresh_list(self) -> None:
+        """Daftar transaksi PAID dengan filter bahasa alami."""
         try:
             parsed = self._parse_filter(self.filter_input.text())
             rows = self.report_service.sales_with_filter(

@@ -21,7 +21,14 @@ settings_router = APIRouter(prefix="/settings", tags=["settings"])
 def _period_bounds(
     start: date | None, end: date | None
 ) -> tuple[datetime, datetime]:
-    """Ubah rentang tanggal lokal menjadi batas UTC-naive seperti desktop."""
+    """Ubah rentang tanggal lokal menjadi batas UTC yang masih timezone-aware.
+
+    Sengaja TIDAK membuang tzinfo di sini. ``ReportService`` sudah punya
+    ``_to_utc_naive`` yang mengonversi nilai naive sebagai waktu lokal; kalau
+    batas dari sini sudah UTC tapi tzinfo-nya dibuang, konversi terjadi dua
+    kali dan jendela laporan bergeser sebesar offset zona waktu (7 jam di
+    WIB), sehingga transaksi sore/malam hilang dari laporan harian.
+    """
     first = start or date.today()
     last = end or first
     if last < first:
@@ -33,7 +40,7 @@ def _period_bounds(
     local_end = datetime.combine(
         last + timedelta(days=1), time.min
     ).astimezone(timezone.utc)
-    return local_start.replace(tzinfo=None), local_end.replace(tzinfo=None)
+    return local_start, local_end
 
 
 @reports_router.get("/daily", response_model=DailyReportOut)
@@ -97,8 +104,9 @@ def range_report(
         for row in sales
     ]
     return RangeReportOut(
-        start=start_dt,
-        end=end_dt,
+        # Bentuk respons dipertahankan UTC-naive seperti sebelumnya.
+        start=start_dt.replace(tzinfo=None),
+        end=end_dt.replace(tzinfo=None),
         sales_count=len(sales),
         sales_total=sum(int(row.get("revenue") or 0) for row in sales),
         profit_total=sum(int(row.get("profit") or 0) for row in profits),

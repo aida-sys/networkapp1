@@ -524,7 +524,8 @@ def test_download_installer_serves_file(tmp_path, signing_keys):
         response = test_client.get("/download/installer")
     assert response.status_code == 200
     assert response.content == b"MZ-fake-installer"
-    assert "POS-Setup.exe" in response.headers["content-disposition"]
+    # Nama unduhan dibranding "Kasirin" oleh installer_download_filename().
+    assert "Kasirin.exe" in response.headers["content-disposition"]
 
 def _setup_pending_order(client):
     token = register_and_login(client)

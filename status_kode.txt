@@ -1,0 +1,9 @@
+            Two things still waiting on you:
+
+            1. Code signing. Both exes are unsigned, so every customer hits SmartScreen. This is
+               the last blocker between you and a clean install experience.
+            2. The Pendapatan tab decision. test_report_center_finance_tabs is the only red test in
+               the suite, and it needs your call on whether the day/month/year summary combo comes
+               back or gets dropped.
+
+            Which one do you want to tackle?

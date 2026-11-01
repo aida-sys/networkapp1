@@ -3,7 +3,6 @@ import shutil
 import uuid
 from pathlib import Path
 
-from PySide6.QtGui import QImageReader
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -105,6 +104,21 @@ class StoreSettingsService:
 
     @classmethod
     def _copy_logo(cls, source: str) -> Path:
+        # QImageReader diimpor di dalam fungsi, bukan di atas modul.
+        # Server POS LAN memakai service ini lewat router /settings/store dan
+        # tidak pernah memvalidasi logo (logo_source selalu None dari API).
+        # Impor di level modul membuat server wajib membawa PySide6 (~200 MB)
+        # hanya untuk satu pemeriksaan yang tidak pernah dipanggil.
+        #
+        # Catatan build: PyInstaller mengubah impor di dalam fungsi menjadi
+        # impor "delayed" yang tetap dijalankan saat modul dimuat. Karena
+        # build server mengecualikan PySide6, impor itu gagal dan seluruh
+        # server mati. importlib dipakai supaya benar-benar hanya dieksekusi
+        # saat _copy_logo() dipanggil.
+        from importlib import import_module
+
+        QImageReader = import_module("PySide6.QtGui").QImageReader
+
         source_path = Path(source).expanduser()
         if not source_path.is_file():
             raise ValidationError("File logo tidak ditemukan.")

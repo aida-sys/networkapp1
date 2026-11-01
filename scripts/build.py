@@ -6,6 +6,12 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# scripts/ bukan package saat dijalankan langsung, jadi tambahkan ke sys.path.
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.code_signing import sign_or_warn  # noqa: E402
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the POS application.")
@@ -68,7 +74,13 @@ def main() -> None:
             f"{rotated_public_key};app\\core",
         ]
     subprocess.run(arguments, cwd=PROJECT_ROOT, check=True)
-    print(f"Build selesai: {PROJECT_ROOT / 'dist' / 'POS' / 'POS.exe'}")
+    executable = PROJECT_ROOT / "dist" / "POS" / "POS.exe"
+    print(f"Build selesai: {executable}")
+
+    # POS.exe ikut ditandatangani supaya file yang dijalankan pengguna juga
+    # tepercaya, bukan hanya installernya.
+    sign_or_warn([executable])
+
     print("Database runtime dibuat terpisah di %LOCALAPPDATA%\\POSApp\\data.")
 
 
