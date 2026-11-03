@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Aplikasi Kasirin — Anjay Software Solution{% endblock %}
+
+{% block site_header %}
+<header class="landing-header">
+  <a class="landing-brand" href="/" aria-label="Anjay Software Solution, beranda">
+    <img src="/static/A.png" alt="">
+    <span>Anjay Software Solution<small>Solusi Digital Anda</small></span>
+  </a>
+  <nav class="landing-nav" aria-label="Navigasi utama">
+    <a href="/apps" aria-current="page">Aplikasi</a>
+    <a href="/download">Unduh</a>
+    <a href="/#fitur">Fitur</a>
+    <a href="/#kontak">Kontak</a>
+    <a class="btn secondary small" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Chat WA</a>
+    {% if customer %}
+      <a class="btn small" href="/dashboard">Dashboard</a>
+    {% else %}
+      <a class="btn small" href="/register">Mulai</a>
+    {% endif %}
+  </nav>
+</header>
+{% endblock %}
+
+{% block page_main %}
+<main class="landing-main apps-main">
+  <section class="apps-hero">
+    <div class="landing-wrap">
+      <p class="eyebrow"><span class="eyebrow-dot"></span> KATALOG APLIKASI</p>
+      <h1>Satu keluarga produk, empat cara menjalankan toko</h1>
+      <p class="apps-lead">Setiap aplikasi memakai alur kasir dan laporan yang sama. Yang berbeda adalah di mana data disimpan dan berapa perangkat yang bisa bekerja bersamaan. Pilih sesuai cara toko Anda beroperasi.</p>
+      <div class="apps-summary" aria-label="Ringkasan katalog">
+        <span><b>{{ counts.available }}</b> tersedia sekarang</span>
+        <span><b>{{ counts.beta }}</b> beta</span>
+        <span><b>{{ counts.coming_soon }}</b> segera hadir</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="apps-section">
+    <div class="landing-wrap">
+      <div class="apps-grid">
+        {% for app in apps %}
+        <article class="app-card{% if app.status == 'available' %} is-available{% endif %}{% if app.status == 'coming_soon' %} is-upcoming{% endif %}" id="app-{{ app.id }}">
+          <div class="app-card-top">
+            <div class="app-icon {{ app.icon_class }}"><span aria-hidden="true">{{ app.icon }}</span></div>
+            <span class="badge {{ app.status_badge }}">{{ app.status_label }}</span>
+          </div>
+          <p class="app-kicker">{{ app.kicker }}</p>
+          <h2>{{ app.name }}</h2>
+          <p class="app-tagline">{{ app.tagline }}</p>
+          <p class="app-description">{{ app.description }}</p>
+
+          <div class="app-meta">
+            <div class="app-meta-row">
+              <b>Arsitektur</b>
+              <span>{{ app.architecture }}</span>
+            </div>
+            <div class="app-meta-row">
+              <b>Platform</b>
+              <span>{{ app.platforms | join(', ') }}</span>
+            </div>
+            <div class="app-meta-row">
+              <b>Cocok untuk</b>
+              <span>{{ app.best_for }}</span>
+            </div>
+            <div class="app-meta-row">
+              <b>Kebutuhan</b>
+              <span>{{ app.requirements }}</span>
+            </div>
+          </div>
+
+          <ul class="app-features">
+            {% for feature in app.features %}
+            <li><span aria-hidden="true">✓</span> {{ feature }}</li>
+            {% endfor %}
+          </ul>
+
+          <div class="app-actions">
+            {% if app.is_available %}
+              <a class="btn" href="/download">Unduh installer</a>
+              <a class="text-link" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Tanya dulu <span aria-hidden="true">→</span></a>
+            {% else %}
+              <span class="app-pending">Belum tersedia untuk diunduh</span>
+              <a class="text-link" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Ikut daftar tunggu <span aria-hidden="true">→</span></a>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="apps-cta">
+    <div class="landing-wrap apps-cta-inner">
+      <div>
+        <p class="eyebrow">BELUM YAKIN PILIH YANG MANA</p>
+        <h2>Ceritakan cara toko Anda beroperasi</h2>
+        <p>Jumlah meja kasir, jumlah cabang, dan kualitas jaringan di lokasi menentukan pilihan yang tepat. Tim kami membantu memetakannya.</p>
+      </div>
+      <a class="btn whatsapp-btn" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Konsultasi via WhatsApp <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+</main>
+
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --blue:#2563eb; --green:#10b981; --line:#e2e8f0; --pale:#f8fafc; }
+  .apps-main { max-width:none; margin:0; padding:0; }
+  .landing-wrap { width:min(1160px, calc(100% - 56px)); margin:0 auto; }
+  .landing-header { position:sticky; top:0; z-index:20; justify-content:space-between; gap:28px; padding:12px max(28px, calc((100vw - 1160px)/2)); background:rgba(255,255,255,.94); border-bottom:1px solid rgba(226,232,240,.85); backdrop-filter:blur(14px); }
+  .landing-brand { display:flex; align-items:center; gap:11px; color:var(--ink); text-decoration:none; font-size:14px; font-weight:750; line-height:1.25; white-space:nowrap; }
+  .landing-brand img { width:42px; height:42px; object-fit:cover; border-radius:11px; }
+  .landing-brand small { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:500; }
+  .landing-nav { gap:23px; }
+  .landing-nav a:not(.btn) { color:#475569; font-size:13px; font-weight:550; text-decoration:none; }
+  .landing-nav a:not(.btn):hover { color:var(--blue); }
+  .landing-nav a[aria-current="page"] { color:var(--blue); font-weight:700; }
+  .landing-nav .btn { white-space:nowrap; }
+  .eyebrow { display:flex; align-items:center; gap:8px; margin:0 0 14px; color:var(--blue); font-size:11px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
+  .eyebrow-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px #d1fae5; }
+
+  .apps-hero { padding:64px 0 40px; background:radial-gradient(ellipse at 78% 20%, rgba(219,234,254,.6), transparent 42%), linear-gradient(180deg,#fff,#f8fbff); }
+  .apps-hero h1 { max-width:760px; margin:0; font-size:clamp(32px,3.6vw,46px); line-height:1.1; letter-spacing:-.04em; }
+  .apps-lead { max-width:660px; margin:18px 0 0; color:#526176; font-size:15px; line-height:1.75; }
+  .apps-summary { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  .apps-summary span { padding:8px 14px; border:1px solid var(--line); border-radius:99px; background:#fff; color:var(--muted); font-size:12px; }
+  .apps-summary b { color:var(--ink); font-size:13px; }
+
+  .apps-section { padding:20px 0 70px; background:#f8fbff; }
+  .apps-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+
+  .app-card { display:flex; flex-direction:column; padding:26px 24px 22px; border:1px solid var(--line); border-radius:15px; background:#fff; transition:transform .2s, box-shadow .2s, border-color .2s; }
+  .app-card:hover { transform:translateY(-3px); border-color:#bfdbfe; box-shadow:0 16px 35px rgba(15,23,42,.08); }
+  .app-card.is-available { border-color:#bfdbfe; box-shadow:0 10px 28px rgba(37,99,235,.07); }
+  .app-card.is-upcoming { background:linear-gradient(180deg,#fff,#fcfdff); }
+  .app-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .app-icon { display:grid; place-items:center; width:46px; height:46px; border-radius:13px; background:#eff6ff; color:var(--blue); font-size:23px; font-weight:700; }
+  .app-icon.lan-icon { background:#ecfdf5; color:#059669; }
+  .app-icon.cloud-icon { background:#f5f3ff; color:#7c3aed; }
+  .app-icon.violet-icon { background:#f5f3ff; color:#7c3aed; }
+  .app-kicker { margin:0 0 6px; color:#94a3b8; font-size:9px; font-weight:750; letter-spacing:.1em; }
+  .app-card h2 { margin:0 0 8px; font-size:21px; letter-spacing:-.02em; }
+  .app-tagline { margin:0 0 12px; color:#334155; font-size:13px; font-weight:600; line-height:1.5; }
+  .app-description { margin:0 0 18px; color:var(--muted); font-size:12.5px; line-height:1.7; }
+
+  .app-meta { display:grid; gap:9px; margin-bottom:18px; padding:14px 0; border-top:1px solid #edf1f6; border-bottom:1px solid #edf1f6; }
+  .app-meta-row { display:grid; grid-template-columns:96px 1fr; gap:10px; font-size:11.5px; }
+  .app-meta-row b { color:#334155; font-weight:650; }
+  .app-meta-row span { color:var(--muted); }
+
+  .app-features { display:grid; gap:8px; margin:0 0 20px; padding:0; list-style:none; color:#475569; font-size:12px; }
+  .app-features li { display:flex; gap:8px; line-height:1.5; }
+  .app-features li span { flex:0 0 auto; display:grid; place-items:center; width:16px; height:16px; margin-top:1px; border-radius:50%; background:#ecfdf5; color:#059669; font-size:10px; font-weight:800; }
+
+  .app-actions { display:flex; align-items:center; gap:14px; margin-top:auto; }
+  .app-actions .btn { padding:10px 16px; font-size:13px; }
+  .app-pending { color:#94a3b8; font-size:11.5px; font-style:italic; }
+  .text-link { display:inline-flex; align-items:center; gap:6px; color:var(--blue); text-decoration:none; font-size:11.5px; font-weight:700; }
+  .text-link:hover { gap:10px; }
+
+  .apps-cta { padding:0 0 76px; background:#f8fbff; }
+  .apps-cta-inner { display:flex; align-items:center; justify-content:space-between; gap:36px; padding:34px 38px; border:1px solid var(--line); border-radius:17px; background:linear-gradient(120deg,#f8fafc,#fff); }
+  .apps-cta-inner h2 { margin:0 0 10px; font-size:26px; letter-spacing:-.03em; }
+  .apps-cta-inner p:not(.eyebrow) { max-width:560px; margin:0; color:var(--muted); font-size:13px; line-height:1.7; }
+  .whatsapp-btn { background:#059669; }
+  .whatsapp-btn:hover { background:#047857; }
+
+  @media (max-width:900px) { .apps-grid { grid-template-columns:1fr; } .apps-cta-inner { flex-direction:column; align-items:flex-start; gap:20px; } }
+  @media (max-width:680px) {
+    .landing-header { padding:10px 16px; gap:10px; }
+    .landing-brand { font-size:12px; } .landing-brand img { width:36px; height:36px; }
+    .landing-nav { gap:8px; } .landing-nav > a:not(.btn) { display:none; }
+    .landing-wrap { width:calc(100% - 36px); }
+    .apps-hero { padding:44px 0 30px; }
+    .apps-hero h1 { font-size:30px; }
+    .app-card { padding:22px 18px 18px; }
+    .app-meta-row { grid-template-columns:84px 1fr; }
+    .apps-cta-inner { padding:26px 22px; }
+    .apps-cta-inner h2 { font-size:22px; }
+  }
+  @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important; } }
+</style>
+{% endblock %}
+
+{% block site_footer %}
+<footer class="landing-footer">
+  <div class="landing-wrap footer-grid">
+    <div class="footer-brand"><a class="landing-brand" href="/"><img src="/static/A.png" alt=""><span>Anjay Software Solution<small>Solusi Digital Anda</small></span></a><p>Penyedia aplikasi kasir dan sistem manajemen toko. Membantu efisiensi transaksi, kerapihan stok, dan kendali operasional usaha.</p></div>
+    <div><h3>Jenis Aplikasi</h3><a href="/apps#app-standalone">Stand Alone</a><a href="/apps#app-lan">Jaringan Lokal</a><a href="/apps#app-mobile">Mobile</a><a href="/apps#app-cloud">Full Cloud</a></div>
+    <div><h3>Fitur Sistem</h3><a href="/#fitur">Penjualan Kasir</a><a href="/#fitur">Manajemen Stok</a><a href="/#fitur">Pembelian &amp; Pengeluaran</a><a href="/#fitur">Opsi Pembayaran</a></div>
+    <div><h3>Hubungi Kami</h3><a href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">WhatsApp: 0878542117</a><span>Senin–Sabtu, 08.00–17.00 WIB</span><a href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Pusat Bantuan</a></div>
+  </div>
+  <div class="landing-wrap footer-bottom"><span>© 2026 Anjay Software Solution. Solusi Digital Anda.</span><a href="/">Kembali ke atas ↑</a></div>
+</footer>
+<style>
+  .landing-footer { padding:45px 0 0; background:#0f172a; color:#cbd5e1; }
+  .footer-grid { display:grid; grid-template-columns:1.5fr 1fr 1.2fr 1.2fr; gap:36px; padding-bottom:34px; }
+  .footer-brand p { max-width:280px; margin:14px 0 0; color:#94a3b8; font-size:11px; line-height:1.7; }
+  .landing-footer .landing-brand { color:#fff; font-size:13px; }
+  .landing-footer .landing-brand small { color:#94a3b8; }
+  .landing-footer h3 { margin:4px 0 15px; color:#fff; font-size:11px; }
+  .landing-footer .footer-grid>div:not(:first-child) a, .landing-footer .footer-grid>div:not(:first-child)>span { display:block; margin:10px 0; color:#94a3b8; text-decoration:none; font-size:10px; }
+  .landing-footer a:hover { color:#fff!important; }
+  .footer-bottom { display:flex; justify-content:space-between; padding:16px 0 19px; border-top:1px solid rgba(148,163,184,.2); color:#94a3b8; font-size:9px; }
+  .footer-bottom a { color:#cbd5e1; text-decoration:none; }
+  @media (max-width:680px) { .footer-grid { grid-template-columns:1fr 1fr; gap:26px 18px; } .footer-brand { grid-column:1/-1; } .footer-bottom { gap:10px; line-height:1.5; } }
+</style>
+{% endblock %}

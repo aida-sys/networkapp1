@@ -1,0 +1,68 @@
+{# Visual hero per slide. Dipilih lewat app.hero.visual:
+   "single"  -> satu perangkat kasir
+   "network" -> satu server toko + beberapa klien
+   "cloud"   -> ringkasan banyak cabang + ponsel
+   Semua ilustrasi murni CSS/HTML, tanpa aset gambar baru. #}
+{% if app.hero.visual == 'single' %}
+<div class="device-card">
+  <div class="device-top"><span class="window-dots"><i></i><i></i><i></i></span><span>Kasir Stand Alone</span><span class="online-pill"><i></i> Lokal</span></div>
+  <div class="dashboard-body">
+    <div class="dashboard-title"><div><small>SATU PERANGKAT</small><strong>Meja kasir</strong></div><span class="avatar">AS</span></div>
+    <div class="stat-grid">
+      <div class="stat-box"><small>Penjualan hari ini</small><strong>Rp 4.820.000</strong><span class="stat-trend">Tersimpan lokal</span></div>
+      <div class="stat-box"><small>Stok terpantau</small><strong>128 <em>produk</em></strong><span class="stat-trend">Data inventori</span></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-heading"><span>Aktivitas penjualan</span><small>7 hari terakhir</small></div>
+      <div class="chart-area">
+        <div class="chart-lines"><i></i><i></i><i></i></div>
+        <svg viewBox="0 0 430 120" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="chart-fill-a" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".22"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,95 C35,90 42,55 82,68 S130,97 166,59 S213,74 246,44 S290,78 326,42 S380,48 430,10 L430,120 L0,120 Z" fill="url(#chart-fill-a)"/>
+          <path d="M0,95 C35,90 42,55 82,68 S130,97 166,59 S213,74 246,44 S290,78 326,42 S380,48 430,10" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="chart-days"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+    </div>
+    <div class="dashboard-bottom"><span class="tiny-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>Tanpa server, tanpa internet</span></div>
+  </div>
+</div>
+<div class="float-note"><span class="float-icon">↗</span><span><small>Status</small><strong>Siap dipakai</strong></span></div>
+
+{% elif app.hero.visual == 'network' %}
+<div class="net-card">
+  <div class="net-head"><span class="window-dots"><i></i><i></i><i></i></span><span>Jaringan Toko</span><span class="online-pill"><i></i> Terhubung</span></div>
+  <div class="net-body">
+    <div class="net-server">
+      <span class="net-server-icon" aria-hidden="true">▤</span>
+      <div><small>SERVER TOKO</small><strong>1 database</strong></div>
+      <span class="net-live"><i></i> aktif</span>
+    </div>
+    <div class="net-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="net-clients">
+      <div class="net-client"><span aria-hidden="true">▣</span><small>Kasir 1</small></div>
+      <div class="net-client"><span aria-hidden="true">▣</span><small>Kasir 2</small></div>
+      <div class="net-client"><span aria-hidden="true">▣</span><small>Gudang</small></div>
+    </div>
+    <div class="net-foot">
+      <span class="net-stat"><b>3</b> perangkat</span>
+      <span class="net-stat"><b>1</b> database</span>
+      <span class="net-stat"><b>0</b> biaya bulanan</span>
+    </div>
+  </div>
+</div>
+<div class="float-note"><span class="float-icon">⌘</span><span><small>Jaringan lokal</small><strong>Semua kasir sinkron</strong></span></div>
+
+{% else %}
+<div class="cloud-window">
+  <div class="cloud-window-head"><div><small>ILUSTRASI PEMANTAUAN</small><strong>Performa cabang</strong></div><span class="period-chip">Bulan ini⌄</span></div>
+  <div class="cloud-total"><span>Total penjualan</span><strong>Rp 82.450.000</strong><small><i></i> Contoh ringkasan seluruh cabang</small></div>
+  <div class="cloud-bars">
+    <div class="bar-labels"><span>Cabang Utama</span><b>Rp 38,2 jt</b></div><div class="bar-track"><i style="width:78%"></i></div>
+    <div class="bar-labels"><span>Cabang Selatan</span><b>Rp 25,6 jt</b></div><div class="bar-track"><i style="width:55%"></i></div>
+    <div class="bar-labels"><span>Cabang Utara</span><b>Rp 18,7 jt</b></div><div class="bar-track"><i style="width:39%"></i></div>
+  </div>
+  <div class="cloud-foot"><span class="online-pill"><i></i> Terhubung</span><span>Data ringkasan toko</span></div>
+</div>
+<div class="phone-peek"><div class="phone-speaker"></div><small>RINGKASAN HARI INI</small><strong>Rp 4,82 jt</strong><span class="phone-line"></span><span class="phone-line short"></span><div class="phone-mini-chart">▁ ▃ ▂ ▅ ▃ ▆ ▄</div></div>
+{% endif %}

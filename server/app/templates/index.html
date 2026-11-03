@@ -8,6 +8,7 @@
     <span>Anjay Software Solution<small>Solusi Digital Anda</small></span>
   </a>
   <nav class="landing-nav" aria-label="Navigasi utama">
+    <a href="/apps">Aplikasi</a>
     <a href="#produk">Produk</a>
     <a href="#fitur">Fitur</a>
     <a href="#cloud">Pemantauan Cloud</a>
@@ -20,47 +21,71 @@
 
 {% block page_main %}
 <main class="landing-main">
-  <section class="landing-hero">
-    <div class="landing-wrap hero-layout">
-      <div class="hero-copy">
-        <p class="eyebrow"><span class="eyebrow-dot"></span> Anjay Software Solution <span class="eyebrow-separator">·</span> Solusi Digital Anda</p>
-        <h1>Aplikasi Kasir &amp; Sistem Manajemen Toko untuk Pertumbuhan Bisnis Anda</h1>
-        <p class="hero-lead">Kelola penjualan harian, pantau stok, catat pembelian dan pengeluaran, serta terima berbagai jenis pembayaran. Pilih sistem Stand Alone, Jaringan Lokal, atau Full Cloud sesuai kebutuhan usaha.</p>
-        <div class="hero-actions">
-          <a class="btn whatsapp-btn" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Jadwalkan Demo via WhatsApp <span aria-hidden="true">→</span></a>
-          <a class="btn secondary" href="/download">Lihat aplikasi</a>
-        </div>
-        <div class="hero-points" aria-label="Manfaat sistem">
-          <span><b aria-hidden="true">✓</b> Pilihan sistem fleksibel</span>
-          <span><b aria-hidden="true">✓</b> Operasional toko lebih tertata</span>
-        </div>
-      </div>
-      <div class="hero-visual" aria-label="Ilustrasi dashboard aplikasi kasir dan pemantauan toko" role="img">
-        <div class="visual-glow"></div>
-        <div class="device-card">
-          <div class="device-top"><span class="window-dots"><i></i><i></i><i></i></span><span>Ringkasan Toko</span><span class="online-pill"><i></i> Sistem aktif</span></div>
-          <div class="dashboard-body">
-            <div class="dashboard-title"><div><small>ILUSTRASI TAMPILAN</small><strong>Kontrol usaha Anda</strong></div><span class="avatar">AS</span></div>
-            <div class="stat-grid">
-              <div class="stat-box"><small>Penjualan hari ini</small><strong>Rp 4.820.000</strong><span class="stat-trend">Ringkasan transaksi</span></div>
-              <div class="stat-box"><small>Stok terpantau</small><strong>128 <em>produk</em></strong><span class="stat-trend">Data inventori</span></div>
+  <section class="landing-hero" aria-roledescription="carousel" aria-label="Jenis aplikasi Kasirin">
+    <div class="landing-wrap">
+      <div class="hero-slider" id="heroSlider" data-autoplay="7000">
+        <div class="hero-track" id="heroTrack">
+          {% for app in hero_slides %}
+          <article class="hero-slide" role="group" aria-roledescription="slide" aria-label="{{ loop.index }} dari {{ hero_slides|length }}: {{ app.hero.eyebrow }}" data-slide="{{ loop.index0 }}">
+            <div class="hero-layout">
+              <div class="hero-copy">
+                <p class="eyebrow"><span class="eyebrow-dot"></span> {{ app.hero.eyebrow }}</p>
+                <h1>{{ app.hero.headline }}</h1>
+                <p class="hero-lead">{{ app.hero.lead }}</p>
+                <div class="hero-actions">
+                  {% if app.is_available %}
+                    <a class="btn" href="/download">Unduh installer <span aria-hidden="true">→</span></a>
+                  {% else %}
+                    <a class="btn" href="/apps#app-{{ app.id }}">Lihat rencana rilis <span aria-hidden="true">→</span></a>
+                  {% endif %}
+                  <a class="btn secondary" href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Tanya via WhatsApp</a>
+                </div>
+                <div class="hero-points" aria-label="Keunggulan {{ app.name }}">
+                  {% for point in app.hero.points %}
+                  <span><b aria-hidden="true">✓</b> {{ point }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="hero-visual" role="img" aria-label="Ilustrasi {{ app.name }}">
+                <div class="visual-glow"></div>
+                {% include "_hero_visual.html" %}
+              </div>
             </div>
-            <div class="chart-card"><div class="chart-heading"><span>Aktivitas penjualan</span><small>7 hari terakhir</small></div><div class="chart-area"><div class="chart-lines"><i></i><i></i><i></i></div><svg viewBox="0 0 430 120" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".22"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs><path d="M0,95 C35,90 42,55 82,68 S130,97 166,59 S213,74 246,44 S290,78 326,42 S380,48 430,10 L430,120 L0,120 Z" fill="url(#chart-fill)"/><path d="M0,95 C35,90 42,55 82,68 S130,97 166,59 S213,74 246,44 S290,78 326,42 S380,48 430,10" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/></svg></div><div class="chart-days"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div></div>
-            <div class="dashboard-bottom"><span class="tiny-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>Penjualan, stok, dan operasional dalam satu sistem</span></div>
-          </div>
+          </article>
+          {% endfor %}
         </div>
-        <div class="float-note"><span class="float-icon">↗</span><span><small>Laporan toko</small><strong>Siap dipantau</strong></span></div>
+        <div class="hero-controls">
+          <button class="hero-arrow" type="button" id="heroPrev" aria-label="Slide sebelumnya">‹</button>
+          <div class="hero-dots" id="heroDots" role="tablist" aria-label="Pilih jenis aplikasi">
+            {% for app in hero_slides %}
+            <button class="hero-dot" type="button" role="tab" data-goto="{{ loop.index0 }}" aria-label="{{ app.hero.eyebrow }}" aria-selected="{{ 'true' if loop.first else 'false' }}"><span aria-hidden="true"></span></button>
+            {% endfor %}
+          </div>
+          <button class="hero-arrow" type="button" id="heroNext" aria-label="Slide berikutnya">›</button>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="architecture section-pad" id="produk">
     <div class="landing-wrap">
-      <div class="section-heading"><p class="eyebrow">PILIHAN SISTEM</p><h2>3 pilihan arsitektur sesuai kebutuhan usaha Anda</h2><p>Mulai dari satu perangkat hingga pemantauan beberapa cabang. Tentukan sistem yang paling sesuai dengan cara toko Anda beroperasi.</p></div>
+      <div class="section-heading"><p class="eyebrow">PILIHAN SISTEM</p><h2>{{ apps|length }} pilihan arsitektur sesuai kebutuhan usaha Anda</h2><p>Mulai dari satu perangkat hingga pemantauan beberapa cabang. Tentukan sistem yang paling sesuai dengan cara toko Anda beroperasi.</p></div>
       <div class="architecture-grid">
-        <article class="architecture-card"><div class="architecture-icon standalone-icon"><span>▣</span></div><p class="card-kicker">UNTUK SATU PERANGKAT</p><h3>Stand Alone</h3><p>Jalankan aplikasi langsung di perangkat kasir. Data tersimpan pada perangkat dan transaksi lokal tetap dapat digunakan saat koneksi internet terbatas.</p><div class="card-fit"><b>Cocok untuk</b><span>Toko tunggal dan UMKM</span></div><a href="/download" class="text-link">Lihat aplikasi <span>→</span></a></article>
-        <article class="architecture-card recommended"><span class="popular-label">OPERASIONAL SATU LOKASI</span><div class="architecture-icon lan-icon"><span>⌘</span></div><p class="card-kicker">UNTUK BEBERAPA PERANGKAT</p><h3>Jaringan Lokal</h3><p>Hubungkan perangkat kasir dan bagian gudang dalam satu jaringan lokal agar tim dapat bekerja bersama di lokasi toko.</p><div class="card-fit"><b>Cocok untuk</b><span>Minimarket dan toko besar</span></div><a href="/download" class="text-link">Konsultasikan kebutuhan <span>→</span></a></article>
-        <article class="architecture-card"><div class="architecture-icon cloud-icon"><span>☁</span></div><p class="card-kicker">UNTUK AKSES JARAK JAUH</p><h3>Full Cloud</h3><p>Akses ringkasan usaha melalui cloud untuk membantu pemilik memantau penjualan, stok, dan operasional dari berbagai lokasi.</p><div class="card-fit"><b>Cocok untuk</b><span>Bisnis multi-cabang</span></div><a href="#cloud" class="text-link">Pelajari pemantauan <span>→</span></a></article>
+        {% for app in apps %}
+        <article class="architecture-card{% if app.highlight %} recommended{% endif %}" aria-label="{{ app.name }}">
+          {% if app.highlight %}<span class="popular-label">{{ app.highlight_label }}</span>{% endif %}
+          <div class="architecture-icon {{ app.icon_class }}"><span aria-hidden="true">{{ app.icon }}</span></div>
+          <p class="card-kicker">{{ app.kicker }}</p>
+          <h3>{{ app.name | replace('Kasirin ', '') }}</h3>
+          <p>{{ app.tagline }}</p>
+          <div class="card-fit"><b>Cocok untuk</b><span>{{ app.best_for }}</span></div>
+          {% if app.is_available %}
+            <a href="/apps#app-{{ app.id }}" class="text-link">Lihat aplikasi <span aria-hidden="true">→</span></a>
+          {% else %}
+            <a href="/apps#app-{{ app.id }}" class="text-link">Segera hadir <span aria-hidden="true">→</span></a>
+          {% endif %}
+        </article>
+        {% endfor %}
       </div>
     </div>
   </section>
@@ -101,7 +126,43 @@
   .landing-nav .btn { white-space:nowrap; }
   .landing-main { max-width:none; margin:0; padding:0; }
   .landing-wrap { width:min(1160px, calc(100% - 56px)); margin:0 auto; }
-  .landing-hero { position:relative; overflow:hidden; padding:76px 0 70px; background:radial-gradient(ellipse at 78% 37%, rgba(219,234,254,.72), transparent 39%), linear-gradient(180deg,#fff 0%,#f8fbff 100%); }
+  .landing-hero { position:relative; overflow:hidden; padding:44px 0 34px; background:radial-gradient(ellipse at 78% 37%, rgba(219,234,254,.72), transparent 39%), linear-gradient(180deg,#fff 0%,#f8fbff 100%); }
+  /* ---- hero slider ---- */
+  .hero-slider { position:relative; }
+  .hero-track { display:flex; transition:transform .55s cubic-bezier(.4,0,.2,1); will-change:transform; }
+  .hero-slide { flex:0 0 100%; min-width:100%; padding:26px 0 18px; }
+  .hero-slide[aria-hidden="true"] { visibility:hidden; }
+  .hero-controls { display:flex; align-items:center; justify-content:center; gap:14px; padding:6px 0 4px; }
+  .hero-arrow { display:grid; place-items:center; width:36px; height:36px; border:1px solid #dbe3eb; border-radius:50%; background:#fff; color:#475569; font-size:19px; line-height:1; cursor:pointer; transition:border-color .18s, color .18s, background .18s; }
+  .hero-arrow:hover { border-color:#93c5fd; color:var(--blue); background:#f8fbff; }
+  .hero-arrow:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+  .hero-dots { display:flex; align-items:center; gap:8px; }
+  .hero-dot { display:grid; place-items:center; width:26px; height:26px; padding:0; border:0; background:transparent; cursor:pointer; }
+  .hero-dot span { display:block; width:9px; height:9px; border-radius:50%; background:#cbd5e1; transition:width .25s, background .25s, border-radius .25s; }
+  .hero-dot:hover span { background:#94a3b8; }
+  .hero-dot[aria-selected="true"] span { width:26px; border-radius:99px; background:var(--blue); }
+  .hero-dot:focus-visible { outline:2px solid var(--blue); outline-offset:1px; border-radius:6px; }
+
+  /* ---- visual: jaringan lokal ---- */
+  .net-card { position:relative; overflow:hidden; border:1px solid #e2e8f0; border-radius:15px; background:#fff; box-shadow:0 28px 70px rgba(15,23,42,.15),0 5px 14px rgba(15,23,42,.04); transform:perspective(1100px) rotateY(-4deg) rotateX(2deg); }
+  .net-head { height:47px; display:flex; align-items:center; gap:12px; padding:0 16px; border-bottom:1px solid #edf1f6; color:#475569; font-size:11px; font-weight:650; }
+  .net-body { padding:20px; background:#fbfdff; }
+  .net-server { display:flex; align-items:center; gap:11px; padding:13px 14px; border:1px solid #d1fae5; border-radius:10px; background:#f0fdf4; }
+  .net-server-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; background:#dcfce7; color:#059669; font-size:17px; font-weight:700; }
+  .net-server small { display:block; color:#059669; font-size:8px; font-weight:750; letter-spacing:.1em; }
+  .net-server strong { display:block; margin-top:3px; color:#0f172a; font-size:13px; }
+  .net-live { display:inline-flex; align-items:center; gap:5px; margin-left:auto; padding:4px 8px; border-radius:99px; background:#fff; color:#15803d; font-size:8px; font-weight:700; }
+  .net-live i { width:6px; height:6px; border-radius:50%; background:#10b981; }
+  .net-lines { display:flex; justify-content:space-around; height:26px; }
+  .net-lines i { width:1px; background:repeating-linear-gradient(180deg,#cbd5e1 0 4px,transparent 4px 8px); }
+  .net-clients { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .net-client { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px; border:1px solid #edf1f6; border-radius:9px; background:#fff; }
+  .net-client span { display:grid; place-items:center; width:28px; height:28px; border-radius:8px; background:#eff6ff; color:#2563eb; font-size:14px; }
+  .net-client small { color:#475569; font-size:9px; font-weight:650; }
+  .net-foot { display:flex; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid #edf1f6; }
+  .net-stat { color:#64748b; font-size:9px; }
+  .net-stat b { color:#0f172a; font-size:12px; margin-right:3px; }
+
   .hero-layout { display:grid; grid-template-columns:1.02fr .98fr; align-items:center; gap:58px; }
   .hero-copy { position:relative; z-index:1; }
   .eyebrow { display:flex; align-items:center; gap:8px; margin:0 0 17px; color:var(--blue); font-size:11px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
@@ -129,7 +190,7 @@
   .chart-card { margin-top:11px;padding:13px 13px 9px;border:1px solid #edf1f6;border-radius:9px;background:#fff; }.chart-heading { display:flex;justify-content:space-between;color:#334155;font-size:9px;font-weight:700; }.chart-heading small { color:#94a3b8;font-size:8px;font-weight:500; }.chart-area { position:relative;height:98px;margin-top:7px; }.chart-lines { position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-around; }.chart-lines i { border-top:1px dashed #e8edf4; }.chart-area svg { position:relative;width:100%;height:100%; }.chart-days { display:flex;justify-content:space-between;color:#94a3b8;font-size:8px; }.dashboard-bottom { display:flex;align-items:center;gap:9px;margin-top:11px;color:#64748b;font-size:8px; }.tiny-bars { display:flex;align-items:end;gap:2px;height:16px; }.tiny-bars i { width:4px;background:#60a5fa;border-radius:2px 2px 0 0; }.tiny-bars i:nth-child(1){height:7px}.tiny-bars i:nth-child(2){height:12px}.tiny-bars i:nth-child(3){height:9px}.tiny-bars i:nth-child(4){height:15px}.tiny-bars i:nth-child(5){height:10px}.tiny-bars i:nth-child(6){height:14px}.tiny-bars i:nth-child(7){height:8px}.tiny-bars i:nth-child(8){height:13px}
   .float-note { position:absolute;right:-7px;bottom:7px;display:flex;align-items:center;gap:10px;padding:11px 15px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.13); }.float-icon { display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#ecfdf5;color:#059669;font-size:19px;font-weight:800; }.float-note small,.float-note strong { display:block; }.float-note small { color:#94a3b8;font-size:8px; }.float-note strong { margin-top:3px;color:#1e293b;font-size:11px; }
   .section-pad { padding:77px 0; }.architecture { background:#fff; }.section-heading { max-width:700px;margin:0 auto 34px;text-align:center; }.section-heading .eyebrow { justify-content:center;margin-bottom:11px; }.section-heading h2,.cloud-copy h2,.contact-card h2 { margin:0;color:#0f172a;font-size:clamp(28px,3vw,38px);line-height:1.15;letter-spacing:-.035em; }.section-heading>p:last-child { max-width:610px;margin:13px auto 0;color:#64748b;font-size:14px;line-height:1.7; }
-  .architecture-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:17px; }.architecture-card { position:relative;padding:25px 23px 22px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;transition:transform .2s,box-shadow .2s,border-color .2s; }.architecture-card:hover { transform:translateY(-4px);border-color:#bfdbfe;box-shadow:0 16px 35px rgba(15,23,42,.08); }.architecture-card.recommended { border-color:#93c5fd;box-shadow:0 10px 30px rgba(37,99,235,.08); }.popular-label { position:absolute;top:0;right:20px;padding:6px 9px;border-radius:0 0 7px 7px;background:#eff6ff;color:#2563eb;font-size:8px;font-weight:800;letter-spacing:.06em; }.architecture-icon { display:grid;place-items:center;width:43px;height:43px;margin-bottom:18px;border-radius:12px;background:#eff6ff;color:#2563eb;font-size:22px;font-weight:700; }.lan-icon {background:#ecfdf5;color:#059669}.cloud-icon {background:#f5f3ff;color:#7c3aed}.card-kicker { margin:0 0 6px;color:#94a3b8;font-size:9px;font-weight:750;letter-spacing:.1em; }.architecture-card h3 { margin:0 0 10px;font-size:19px; }.architecture-card>p:not(.card-kicker) { min-height:83px;margin:0;color:#64748b;font-size:12px;line-height:1.7; }.card-fit { display:flex;flex-direction:column;gap:4px;margin:17px 0;padding:12px 0;border-top:1px solid #edf1f6;border-bottom:1px solid #edf1f6;font-size:11px; }.card-fit b { color:#334155; }.card-fit span { color:#64748b; }.text-link { display:inline-flex;align-items:center;gap:7px;color:#2563eb;text-decoration:none;font-size:11px;font-weight:700; }.text-link:hover { gap:11px; }
+  .architecture-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:17px; }.architecture-card { position:relative;padding:25px 23px 22px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;transition:transform .2s,box-shadow .2s,border-color .2s; }.architecture-card:hover { transform:translateY(-4px);border-color:#bfdbfe;box-shadow:0 16px 35px rgba(15,23,42,.08); }.architecture-card.recommended { border-color:#93c5fd;box-shadow:0 10px 30px rgba(37,99,235,.08); }.popular-label { position:absolute;top:0;right:20px;padding:6px 9px;border-radius:0 0 7px 7px;background:#eff6ff;color:#2563eb;font-size:8px;font-weight:800;letter-spacing:.06em; }.architecture-icon { display:grid;place-items:center;width:43px;height:43px;margin-bottom:18px;border-radius:12px;background:#eff6ff;color:#2563eb;font-size:22px;font-weight:700; }.lan-icon {background:#ecfdf5;color:#059669}.cloud-icon {background:#f5f3ff;color:#7c3aed}.card-kicker { margin:0 0 6px;color:#94a3b8;font-size:9px;font-weight:750;letter-spacing:.1em; }.architecture-card h3 { margin:0 0 10px;font-size:19px; }.architecture-card>p:not(.card-kicker) { min-height:83px;margin:0;color:#64748b;font-size:12px;line-height:1.7; }.card-fit { display:flex;flex-direction:column;gap:4px;margin:17px 0;padding:12px 0;border-top:1px solid #edf1f6;border-bottom:1px solid #edf1f6;font-size:11px; }.card-fit b { color:#334155; }.card-fit span { color:#64748b; }.text-link { display:inline-flex;align-items:center;gap:7px;color:#2563eb;text-decoration:none;font-size:11px;font-weight:700; }.text-link:hover { gap:11px; }
   .features-section { background:#f8fafc; }.feature-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:15px; }.feature-item { display:flex;align-items:flex-start;gap:15px;padding:21px;border:1px solid #e7edf5;border-radius:12px;background:#fff; }.feature-icon { flex:0 0 40px;display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:#eff6ff;color:#2563eb;font-size:19px;font-weight:700; }.green-icon {background:#ecfdf5;color:#059669}.amber-icon {background:#fffbeb;color:#d97706}.violet-icon {background:#f5f3ff;color:#7c3aed}.feature-item h3 { margin:2px 0 6px;font-size:15px; }.feature-item p { margin:0;color:#64748b;font-size:12px;line-height:1.65; }
   .cloud-section { overflow:hidden;background:linear-gradient(115deg,#0f172a,#15284b); }.cloud-layout { display:grid;grid-template-columns:.95fr 1.05fr;align-items:center;gap:55px; }.cloud-copy .eyebrow { color:#6ee7b7; }.cloud-copy h2 { max-width:490px;color:#fff; }.cloud-copy>p:not(.eyebrow) { max-width:500px;margin:16px 0;color:#bdc9da;font-size:13px;line-height:1.8; }.cloud-copy ul { display:grid;gap:11px;margin:20px 0 25px;padding:0;list-style:none;color:#e2e8f0;font-size:12px; }.cloud-copy li span { display:inline-grid;place-items:center;width:18px;height:18px;margin-right:8px;border-radius:50%;background:rgba(16,185,129,.18);color:#6ee7b7;font-size:11px;font-weight:800; }.cloud-visual { position:relative;padding:24px 26px 24px 0; }.cloud-window { padding:20px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.25); }.cloud-window-head { display:flex;align-items:center;justify-content:space-between; }.cloud-window-head strong { font-size:14px; }.period-chip { padding:7px 9px;border:1px solid #e2e8f0;border-radius:7px;color:#64748b;font-size:9px; }.cloud-total { margin-top:17px;padding:15px;border-radius:9px;background:#f8fafc; }.cloud-total>span,.cloud-total strong,.cloud-total small { display:block; }.cloud-total>span { color:#64748b;font-size:9px; }.cloud-total strong { margin:5px 0;color:#0f172a;font-size:24px; }.cloud-total small { color:#059669;font-size:9px; }.cloud-total small i { display:inline-block;width:6px;height:6px;margin-right:4px;border-radius:50%;background:#10b981; }.cloud-bars { padding:16px 2px 2px; }.bar-labels { display:flex;justify-content:space-between;margin:11px 0 6px;color:#475569;font-size:9px; }.bar-labels b { color:#1e293b; }.bar-track { height:6px;overflow:hidden;border-radius:10px;background:#eef2f7; }.bar-track i { display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#2563eb,#60a5fa); }.bar-track:nth-of-type(4) i {background:linear-gradient(90deg,#10b981,#6ee7b7)}.cloud-foot { display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid #edf1f6;color:#94a3b8;font-size:8px; }.cloud-foot .online-pill { margin:0; }.phone-peek { position:absolute;right:0;bottom:2px;width:115px;padding:19px 12px 12px;border:4px solid #1e293b;border-radius:18px;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.25); }.phone-speaker { width:30px;height:4px;margin:-12px auto 15px;border-radius:4px;background:#334155; }.phone-peek small,.phone-peek strong { display:block; }.phone-peek small { color:#94a3b8;font-size:6px;font-weight:700; }.phone-peek strong { margin:5px 0 13px;color:#0f172a;font-size:13px; }.phone-line { display:block;height:4px;margin:6px 0;border-radius:4px;background:#e2e8f0; }.phone-line.short { width:62%; }.phone-mini-chart { margin-top:12px;color:#2563eb;font-size:16px;letter-spacing:2px; }
   .contact-section { background:#fff; }.contact-card { display:flex;align-items:center;justify-content:space-between;gap:40px;padding:37px 42px;border:1px solid #e2e8f0;border-radius:17px;background:linear-gradient(120deg,#f8fafc,#fff); }.contact-card>div:first-child { max-width:650px; }.contact-card h2 { font-size:30px; }.contact-card>div>p:not(.eyebrow) { max-width:580px;margin:12px 0 17px;color:#64748b;font-size:13px;line-height:1.7; }.contact-hours { display:flex;align-items:center;gap:10px; }.contact-mark { display:grid;place-items:center;width:33px;height:33px;border-radius:9px;background:#eff6ff;color:#2563eb;font-size:17px; }.contact-hours b,.contact-hours small { display:block; }.contact-hours b { font-size:10px; }.contact-hours small { margin-top:3px;color:#64748b;font-size:9px; }.contact-actions { display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:215px; }.contact-actions .btn { text-align:center; }.contact-actions>small { color:#94a3b8;text-align:center;font-size:9px; }.contact-actions>small a { color:#2563eb;text-decoration:none;font-weight:700; }
@@ -138,13 +199,101 @@
   @media (max-width:680px) { .landing-header { padding:10px 16px;gap:10px; }.landing-brand {font-size:12px}.landing-brand img {width:36px;height:36px}.landing-nav {gap:7px}.landing-nav .btn {padding:7px 9px;font-size:10px}.landing-nav .btn.secondary {display:none}.landing-wrap {width:calc(100% - 36px)}.landing-hero {padding:48px 0 43px}.hero-layout {grid-template-columns:1fr;gap:22px}.hero-copy h1 {font-size:39px}.hero-lead {font-size:14px}.hero-visual {max-width:530px;width:100%;margin:0 auto;padding-right:6px}.device-card {transform:none}.float-note {right:-3px;bottom:1px}.section-pad {padding:54px 0}.section-heading {margin-bottom:26px}.section-heading h2,.cloud-copy h2 {font-size:29px}.architecture-grid {grid-template-columns:1fr;gap:12px}.architecture-card>p:not(.card-kicker) {min-height:auto}.feature-grid {grid-template-columns:1fr;gap:10px}.cloud-layout {grid-template-columns:1fr;gap:25px}.cloud-visual {max-width:500px;width:100%;margin:0 auto;padding-right:18px}.phone-peek {right:-3px;width:98px}.contact-card {align-items:stretch;flex-direction:column;gap:22px;padding:25px 21px}.contact-card h2 {font-size:27px}.contact-actions {min-width:0}.footer-grid {grid-template-columns:1fr 1fr;gap:26px 18px}.footer-brand {grid-column:1/-1}.footer-bottom {gap:10px;line-height:1.5}.landing-footer {padding-top:32px} }
   @media (prefers-reduced-motion:reduce) { *,*::before,*::after {scroll-behavior:auto!important;transition:none!important} }
 </style>
+<script>
+(() => {
+  const slider = document.getElementById("heroSlider");
+  const track = document.getElementById("heroTrack");
+  if (!slider || !track) return;
+
+  const slides = Array.from(track.querySelectorAll(".hero-slide"));
+  const dots = Array.from(document.querySelectorAll(".hero-dot"));
+  const prevButton = document.getElementById("heroPrev");
+  const nextButton = document.getElementById("heroNext");
+  if (slides.length < 2) {
+    // Satu slide: tidak perlu kontrol sama sekali.
+    const controls = slider.querySelector(".hero-controls");
+    if (controls) controls.remove();
+    return;
+  }
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const autoplayMs = Number(slider.dataset.autoplay) || 0;
+  let index = 0;
+  let timer = null;
+
+  function render() {
+    track.style.transform = `translateX(-${index * 100}%)`;
+    slides.forEach((slide, i) => {
+      // Slide yang tidak aktif disembunyikan dari pembaca layar dan Tab,
+      // supaya tautan di dalamnya tidak bisa difokus tanpa terlihat.
+      const active = i === index;
+      slide.setAttribute("aria-hidden", String(!active));
+      slide.querySelectorAll("a, button").forEach((el) => {
+        if (active) el.removeAttribute("tabindex");
+        else el.setAttribute("tabindex", "-1");
+      });
+    });
+    dots.forEach((dot, i) => {
+      dot.setAttribute("aria-selected", String(i === index));
+      dot.setAttribute("tabindex", i === index ? "0" : "-1");
+    });
+  }
+
+  function goTo(next) {
+    index = (next + slides.length) % slides.length;
+    render();
+  }
+
+  function startAutoplay() {
+    if (!autoplayMs || reduceMotion) return;
+    stopAutoplay();
+    timer = window.setInterval(() => goTo(index + 1), autoplayMs);
+  }
+
+  function stopAutoplay() {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  }
+
+  prevButton?.addEventListener("click", () => { goTo(index - 1); startAutoplay(); });
+  nextButton?.addEventListener("click", () => { goTo(index + 1); startAutoplay(); });
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      goTo(Number(dot.dataset.goto));
+      startAutoplay();
+    });
+  });
+
+  // Berhenti berputar saat kursor/fokus di dalam slider, supaya pengunjung
+  // yang sedang membaca tidak kehilangan slide di tengah kalimat.
+  slider.addEventListener("mouseenter", stopAutoplay);
+  slider.addEventListener("mouseleave", startAutoplay);
+  slider.addEventListener("focusin", stopAutoplay);
+  slider.addEventListener("focusout", startAutoplay);
+
+  slider.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") { goTo(index - 1); startAutoplay(); }
+    if (event.key === "ArrowRight") { goTo(index + 1); startAutoplay(); }
+  });
+
+  // Jangan berputar saat tab tidak terlihat: hemat CPU dan hindari
+  // slide "melompat" saat pengunjung kembali.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopAutoplay();
+    else startAutoplay();
+  });
+
+  render();
+  startAutoplay();
+})();
+</script>
 {% endblock %}
 
 {% block site_footer %}
 <footer class="landing-footer">
   <div class="landing-wrap footer-grid">
     <div class="footer-brand"><a class="landing-brand" href="/"><img src="/static/A.png" alt=""><span>Anjay Software Solution<small>Solusi Digital Anda</small></span></a><p>Penyedia aplikasi kasir dan sistem manajemen toko. Membantu efisiensi transaksi, kerapihan stok, dan kendali operasional usaha.</p></div>
-    <div><h3>Jenis Aplikasi</h3><a href="#produk">Stand Alone</a><a href="#produk">Jaringan Lokal</a><a href="#produk">Full Cloud</a></div>
+    <div><h3>Jenis Aplikasi</h3><a href="/apps#app-standalone">Stand Alone</a><a href="/apps#app-lan">Jaringan Lokal</a><a href="/apps#app-mobile">Mobile</a><a href="/apps#app-cloud">Full Cloud</a></div>
     <div><h3>Fitur Sistem</h3><a href="#fitur">Penjualan Kasir</a><a href="#fitur">Manajemen Stok</a><a href="#fitur">Pembelian &amp; Pengeluaran</a><a href="#fitur">Opsi Pembayaran</a></div>
     <div><h3>Hubungi Kami</h3><a href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">WhatsApp: 0878542117</a><span>Senin–Sabtu, 08.00–17.00 WIB</span><a href="https://wa.me/{{ admin_whatsapp }}" target="_blank" rel="noopener">Pusat Bantuan</a></div>
   </div>

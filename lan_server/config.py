@@ -98,12 +98,15 @@ class LanSettings(BaseSettings):
 
     @property
     def resolved_web_build_dir(self) -> Path | None:
-        if not self.web_build_dir:
-            return None
-        path = Path(self.web_build_dir).expanduser()
-        if not path.is_absolute():
-            path = PROJECT_ROOT / path
-        return path if path.is_dir() else None
+        if self.web_build_dir:
+            path = Path(self.web_build_dir).expanduser()
+            if not path.is_absolute():
+                path = PROJECT_ROOT / path
+            return path if path.is_dir() else None
+        candidate = PROJECT_ROOT / "android" / "kasirin_mobile" / "build" / "web"
+        if candidate.is_dir() and (candidate / "index.html").is_file():
+            return candidate
+        return None
     @property
     def allowed_origins(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]

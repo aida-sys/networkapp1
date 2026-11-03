@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from server.app import app_catalog
 from server.app import roadmap as roadmap_content
 from server.app.config import Settings, settings as default_settings
 from server.app.database import init_db, make_session_factory, seed_admin, seed_plans
@@ -237,7 +238,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"plans": plans, "customer": customer, "admin_whatsapp": app_settings.admin_whatsapp},
+            {
+                "plans": plans,
+                "customer": customer,
+                "apps": app_catalog.all_apps(),
+                "hero_slides": app_catalog.hero_slides(),
+                "admin_whatsapp": app_settings.admin_whatsapp,
+            },
+        )
+
+    @app.get("/apps", response_class=HTMLResponse)
+    def apps_page(request: Request, session: Session = Depends(get_session)):
+        """Katalog semua aplikasi Kasirin, termasuk yang belum dirilis.
+
+        Halaman ini yang menjadi tempat "aplikasi berikutnya" tampil, jadi
+        menambah produk cukup menambah entri di ``app_catalog.APPS``.
+        """
+        customer = auth_service.customer_for_token(session, get_token(request))
+        return templates.TemplateResponse(
+            request,
+            "apps.html",
+            {
+                "customer": customer,
+                "apps": app_catalog.all_apps(),
+                "counts": app_catalog.count_by_status(),
+                "admin_whatsapp": app_settings.admin_whatsapp,
+            },
         )
 
     @app.get("/download", response_class=HTMLResponse)
