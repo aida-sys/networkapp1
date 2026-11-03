@@ -9,6 +9,67 @@ const ownerMuted = Color(0xFF64748B);
 const ownerBlue = Color(0xFF0877B9);
 const ownerCanvas = Color(0xFFF5F7FA);
 const ownerBorder = Color(0xFFE4E9EF);
+const ownerFieldFill = Color(0xFFF8FAFC);
+const ownerFieldHint = Color(0xFF94A3B8);
+const ownerDanger = Color(0xFFB42318);
+
+/// Tema input untuk permukaan terang (kartu putih pada layar login, setup,
+/// owner, lisensi, dan koneksi).
+///
+/// Tema aplikasi bersifat gelap, sehingga `InputDecorationTheme` global
+/// mewarnai kotak input dengan fill gelap dan label terang. Di atas kartu putih
+/// itu membuat label mengapung tanpa latar sehingga tampak menumpuk di kotak
+/// input. Tema ini mengembalikan field ke gaya terang yang sesuai.
+InputDecorationTheme buildOwnerInputDecorationTheme() {
+  OutlineInputBorder border(Color color, {double width = 1}) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+
+  return InputDecorationTheme(
+    filled: true,
+    fillColor: ownerFieldFill,
+    isDense: false,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+    labelStyle: const TextStyle(color: ownerMuted, fontSize: 14),
+    floatingLabelStyle: const TextStyle(
+      color: ownerBlue,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+    ),
+    hintStyle: const TextStyle(color: ownerFieldHint, fontSize: 14),
+    helperStyle: const TextStyle(color: ownerMuted, fontSize: 12),
+    helperMaxLines: 2,
+    errorStyle: const TextStyle(color: ownerDanger, fontSize: 12),
+    errorMaxLines: 2,
+    prefixIconColor: ownerMuted,
+    suffixIconColor: ownerMuted,
+    border: border(ownerBorder),
+    enabledBorder: border(ownerBorder),
+    disabledBorder: border(ownerBorder),
+    focusedBorder: border(ownerBlue, width: 2),
+    errorBorder: border(ownerDanger),
+    focusedErrorBorder: border(ownerDanger, width: 2),
+  );
+}
+
+/// Membungkus permukaan terang dengan tema input yang sesuai.
+class OwnerFormTheme extends StatelessWidget {
+  const OwnerFormTheme({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context)
+          .copyWith(inputDecorationTheme: buildOwnerInputDecorationTheme()),
+      child: child,
+    );
+  }
+}
 
 class TrialBanner extends ConsumerStatefulWidget {
   const TrialBanner({super.key});
@@ -22,7 +83,18 @@ class _TrialBannerState extends ConsumerState<TrialBanner>
   late final AnimationController _ticker = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 14),
-  )..repeat();
+  );
+
+  /// The marquee only needs to run while a trial banner is actually on screen.
+  /// Starting it eagerly kept an endless animation alive on screens that render
+  /// no banner at all, which never lets the widget tree reach a settled state.
+  void _syncTicker(bool shouldRun) {
+    if (shouldRun) {
+      if (!_ticker.isAnimating) _ticker.repeat();
+    } else if (_ticker.isAnimating) {
+      _ticker.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -32,13 +104,19 @@ class _TrialBannerState extends ConsumerState<TrialBanner>
 
   @override
   Widget build(BuildContext context) {
+    // Never run the marquee when the platform asks for reduced motion; an
+    // endless animation also prevents the tree from ever settling.
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
     if (ref.watch(billingLicenseActiveProvider).asData?.value == true) {
+      _syncTicker(false);
       return const SizedBox.shrink();
     }
     return ref
         .watch(trialStatusProvider)
         .when(
           data: (trial) {
+            _syncTicker(!reduceMotion);
             final expired = !trial.active;
             final message = expired
                 ? 'MODE TRIAL BERAKHIR - Aktivasi diperlukan untuk transaksi.'
@@ -50,18 +128,24 @@ class _TrialBannerState extends ConsumerState<TrialBanner>
               expired ? Icons.warning_amber_rounded : Icons.timelapse,
             );
           },
-          loading: () => _buildTickerBanner(
-            context,
-            'MEMERIKSA STATUS TRIAL - Mohon tunggu sebentar.',
-            const Color(0xFF8A4B08),
-            Icons.timelapse,
-          ),
-      error: (_, _) => _buildTickerBanner(
-            context,
-            'STATUS TRIAL TIDAK TERSEDIA - Ketuk untuk aktivasi.',
-            const Color(0xFF8A2C20),
-            Icons.warning_amber_rounded,
-          ),
+          loading: () {
+            _syncTicker(!reduceMotion);
+            return _buildTickerBanner(
+              context,
+              'MEMERIKSA STATUS TRIAL - Mohon tunggu sebentar.',
+              const Color(0xFF8A4B08),
+              Icons.timelapse,
+            );
+          },
+          error: (_, _) {
+            _syncTicker(!reduceMotion);
+            return _buildTickerBanner(
+              context,
+              'STATUS TRIAL TIDAK TERSEDIA - Ketuk untuk aktivasi.',
+              const Color(0xFF8A2C20),
+              Icons.warning_amber_rounded,
+            );
+          },
         );
   }
 
@@ -114,6 +198,24 @@ class _TrialTicker extends StatelessWidget {
     final gap = painter.width * 0.2 + 24;
     final cycleWidth = painter.width + gap;
 
+    // Respect the platform "reduce motion" accessibility setting: show the
+    // message once, statically, instead of scrolling it forever.
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion) {
+      // Static fallback: a single, ellipsized line. Align is avoided here
+      // because an Align without heightFactor expands to the full available
+      // height and would stretch the banner over the whole screen.
+      return ClipRect(
+        child: Text(
+          text,
+          style: style,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
     return ClipRect(
       child: AnimatedBuilder(
         animation: controller,
@@ -121,14 +223,28 @@ class _TrialTicker extends StatelessWidget {
           offset: Offset(-cycleWidth * controller.value, 0),
           child: child,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(text, style: style, maxLines: 1, softWrap: false),
-            SizedBox(width: gap),
-            Text(text, style: style, maxLines: 1, softWrap: false),
-            SizedBox(width: gap),
-          ],
+        // The marquee is intentionally wider than the banner. Without
+        // OverflowBox the Row is forced to the incoming width and overflows by
+        // the full text width, which threw a RenderFlex overflow on every
+        // screen that shows the trial banner. OverflowBox sizes itself to the
+        // biggest incoming constraint, so the height is pinned with a SizedBox
+        // first; otherwise the banner stretches over the whole screen.
+        child: SizedBox(
+          height: painter.height,
+          child: OverflowBox(
+            alignment: Alignment.centerLeft,
+            minWidth: 0,
+            maxWidth: double.infinity,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(text, style: style, maxLines: 1, softWrap: false),
+                SizedBox(width: gap),
+                Text(text, style: style, maxLines: 1, softWrap: false),
+                SizedBox(width: gap),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -288,7 +404,10 @@ class OwnerScaffold extends StatelessWidget {
         children: [
           Expanded(
             child: Theme(
-              data: Theme.of(context).copyWith(dataTableTheme: tableTheme),
+              data: Theme.of(context).copyWith(
+                dataTableTheme: tableTheme,
+                inputDecorationTheme: buildOwnerInputDecorationTheme(),
+              ),
               child: Stack(
                 children: [
                   SafeArea(

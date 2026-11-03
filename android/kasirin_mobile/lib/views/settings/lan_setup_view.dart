@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
+import '../owner/owner_widgets.dart';
 import '../../remote/pos_api_client.dart';
 import '../../services/app_mode.dart';
 
@@ -132,131 +133,145 @@ class _LanSetupViewState extends ConsumerState<LanSetupView> {
     final theme = Theme.of(context);
     final modeState = ref.watch(appModeProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Koneksi Server')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Mode aplikasi', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    modeState.isLan
-                        ? 'Saat ini: LAN — data dari server pusat.'
-                        : 'Saat ini: Standalone — data di perangkat ini.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Mode standalone tetap berjalan seperti biasa. '
-                    'Berpindah ke LAN tidak memindahkan data lama secara '
-                    'otomatis; migrasi dilakukan sekali di komputer server.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+    return OwnerFormTheme(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Koneksi Server')),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mode aplikasi', style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                      modeState.isLan
+                          ? 'Saat ini: LAN — data dari server pusat.'
+                          : 'Saat ini: Standalone — data di perangkat ini.',
+                      style: theme.textTheme.bodyMedium,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Alamat server POS', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _urlController,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Alamat server',
-                      hintText: 'http://192.168.1.10:8002',
-                      helperText:
-                          'IP komputer server di jaringan toko, port 8002.',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _testing ? null : _testConnection,
-                        icon: _testing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.wifi_tethering),
-                        label: const Text('Uji Koneksi'),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
-                        onPressed: _saving ? null : _save,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Simpan & Pakai LAN'),
-                      ),
-                    ],
-                  ),
-                  if (_statusMessage != null) ...[
                     const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          _statusOk ? Icons.check_circle : Icons.error_outline,
-                          color: _statusOk
-                              ? const Color(0xFF18794E)
-                              : theme.colorScheme.error,
-                          size: 20,
+                    Text(
+                      'Mode standalone tetap berjalan seperti biasa. '
+                      'Berpindah ke LAN tidak memindahkan data lama secara '
+                      'otomatis; migrasi dilakukan sekali di komputer server.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _statusMessage!,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),                      ],
+                      ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Kembali ke standalone',
-                      style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Data lokal di perangkat ini tidak diubah dan tetap bisa '
-                    'dipakai seperti sebelumnya.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _useStandalone,
-                    icon: const Icon(Icons.phone_android),
-                    label: const Text('Pakai Standalone'),
-                  ),
-                ],
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Alamat server POS',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _urlController,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Alamat server',
+                        hintText: 'http://192.168.1.10:8002',
+                        helperText:
+                            'IP komputer server di jaringan toko, port 8002.',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _testing ? null : _testConnection,
+                          icon: _testing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.wifi_tethering),
+                          label: const Text('Uji Koneksi'),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton.icon(
+                          onPressed: _saving ? null : _save,
+                          icon: const Icon(Icons.save),
+                          label: const Text('Simpan & Pakai LAN'),
+                        ),
+                      ],
+                    ),
+                    if (_statusMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            _statusOk
+                                ? Icons.check_circle
+                                : Icons.error_outline,
+                            color: _statusOk
+                                ? const Color(0xFF18794E)
+                                : theme.colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _statusMessage!,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kembali ke standalone',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Data lokal di perangkat ini tidak diubah dan tetap bisa '
+                      'dipakai seperti sebelumnya.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _useStandalone,
+                      icon: const Icon(Icons.phone_android),
+                      label: const Text('Pakai Standalone'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

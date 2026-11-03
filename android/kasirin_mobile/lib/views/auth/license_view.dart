@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../platform/billing_platform.dart';
 import '../../providers.dart';
+import '../owner/owner_widgets.dart';
 
 class LicenseView extends ConsumerStatefulWidget {
   const LicenseView({super.key});
@@ -362,251 +363,257 @@ class _LicenseViewState extends ConsumerState<LicenseView>
   @override
   Widget build(BuildContext context) {
     final trial = ref.watch(trialStatusProvider);
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        title: const Text('Lisensi & Langganan'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _license?['status'] == 'active'
-                        ? 'Status: Lisensi Aktif'
-                        : 'Status: ${trial.when(data: (t) => t.active ? 'Trial' : 'Trial berakhir', loading: () => 'Memeriksa trial…', error: (_, _) => 'Trial tidak dapat diperiksa')} ',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  trial.when(
-                    data: (t) => Text(
-                      t.active
-                          ? 'Trial 7 hari · sisa ${_duration(t.remaining)} · berakhir ${t.endsAt.toLocal().toString().substring(0, 10)}'
-                          : 'Trial berakhir ${t.endsAt.toLocal().toString().substring(0, 10)}. Aktivasi berbayar diperlukan.',
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Gagal membaca trial: $e'),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'File .posreq adalah permintaan untuk diunggah ke dashboard billing. File .poslic diterbitkan server setelah pembayaran dan diunduh dari dashboard.',
-                  ),
-                  if (_subscription != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Langganan server: ${(_subscription!['plan'] is Map ? (_subscription!['plan']['name'] ?? _subscription!['plan']['code']) : null) ?? _subscription!['status'] ?? 'aktif'} · ${_subscription!['plan'] is Map ? (_subscription!['plan']['remaining_text'] ?? '') : ''}',
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return OwnerFormTheme(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F6F8),
+        appBar: AppBar(
+          title: const Text('Lisensi & Langganan'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/'),
           ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    _customerToken == null
-                        ? 'Akun Billing'
-                        : 'Akun Billing Terhubung',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  if (_customerToken == null) ...[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email akun billing',
-                      ),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _license?['status'] == 'active'
+                          ? 'Status: Lisensi Aktif'
+                          : 'Status: ${trial.when(data: (t) => t.active ? 'Trial' : 'Trial berakhir', loading: () => 'Memeriksa trial…', error: (_, _) => 'Trial tidak dapat diperiksa')} ',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    TextField(
-                      controller: _password,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                    ),
-                    if (_register)
-                      TextField(
-                        controller: _store,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama toko',
-                        ),
+                    const SizedBox(height: 8),
+                    trial.when(
+                      data: (t) => Text(
+                        t.active
+                            ? 'Trial 7 hari · sisa ${_duration(t.remaining)} · berakhir ${t.endsAt.toLocal().toString().substring(0, 10)}'
+                            : 'Trial berakhir ${t.endsAt.toLocal().toString().substring(0, 10)}. Aktivasi berbayar diperlukan.',
                       ),
-                    TextButton(
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() => _register = !_register),
-                      child: Text(
-                        _register
-                            ? 'Sudah punya akun? Masuk'
-                            : 'Belum punya akun? Daftar',
-                      ),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Text('Gagal membaca trial: $e'),
                     ),
-                    FilledButton(
-                      onPressed: _busy ? null : _authenticate,
-                      child: Text(
-                        _busy
-                            ? 'Menghubungkan…'
-                            : _register
-                            ? 'Daftar dan Hubungkan Perangkat'
-                            : 'Masuk dan Hubungkan Perangkat',
-                      ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'File .posreq adalah permintaan untuk diunggah ke dashboard billing. File .poslic diterbitkan server setelah pembayaran dan diunduh dari dashboard.',
                     ),
-                    if (_message != null) ...[
+                    if (_subscription != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        _message!,
-                        style: TextStyle(
-                          color: _message!.contains('aktif')
-                              ? Colors.green.shade800
-                              : Colors.blueGrey.shade200,
-                        ),
+                        'Langganan server: ${(_subscription!['plan'] is Map ? (_subscription!['plan']['name'] ?? _subscription!['plan']['code']) : null) ?? _subscription!['status'] ?? 'aktif'} · ${_subscription!['plan'] is Map ? (_subscription!['plan']['remaining_text'] ?? '') : ''}',
                       ),
                     ],
-                  ] else ...[
-                    const SizedBox(height: 8),
-                    Text(_email.text),
-                    if (_devicePk == null) ...[
-                      TextField(
-                        controller: _store,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama toko',
-                        ),
-                      ),
-                      FilledButton(
-                        onPressed: _busy
-                            ? null
-                            : () async {
-                                setState(() {
-                                  _busy = true;
-                                  _message = null;
-                                });
-                                try {
-                                  await _registerDevice();
-                                  await _refreshLicense();
-                                } catch (e) {
-                                  if (mounted) {
-                                    setState(() => _message = _cleanError(e));
-                                  }
-                                } finally {
-                                  if (mounted) setState(() => _busy = false);
-                                }
-                              },
-                        child: const Text('Hubungkan perangkat'),
-                      ),
-                    ],
-                    OutlinedButton(
-                      onPressed: _busy
-                          ? null
-                          : () async {
-                              await _storage.delete(
-                                key: 'billing.customer_token',
-                              );
-                              await _storage.delete(
-                                key: 'billing.device_token',
-                              );
-                              await _storage.delete(key: 'billing.device_pk');
-                              if (mounted) {
-                                setState(() {
-                                  _customerToken = null;
-                                  _deviceToken = null;
-                                  _devicePk = null;
-                                  _license = null;
-                                });
-                              }
-                            },
-                      child: const Text('Putuskan akun billing'),
-                    ),
                   ],
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _busy ? null : _saveRequestAndOpenDashboard,
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('Buat .posreq & buka dashboard billing'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Paket Langganan',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 10),
-                  if (_plans.isEmpty)
-                    OutlinedButton.icon(
-                      onPressed: _loadPlans,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Muat ulang paket'),
-                    )
-                  else ...[
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedPlan,
-                      decoration: const InputDecoration(
-                        labelText: 'Pilih paket',
-                      ),
-                      items: _plans
-                          .map(
-                            (p) => DropdownMenuItem(
-                              value: p['code']?.toString(),
-                              child: Text(
-                                '${p['name']} · Rp ${p['price_idr']}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedPlan = v),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: _busy ? null : _checkout,
-                      icon: const Icon(Icons.lock_open),
-                      label: const Text('Lanjutkan ke pembayaran'),
-                    ),
-                  ],
-                  OutlinedButton.icon(
-                    onPressed: _deviceToken == null || _busy
-                        ? null
-                        : _refreshLicense,
-                    icon: const Icon(Icons.sync),
-                    label: const Text('Periksa aktivasi dari server'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_message != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                _message!,
-                style: TextStyle(
-                  color: _message!.contains('aktif')
-                      ? Colors.green.shade800
-                      : Colors.blueGrey.shade800,
                 ),
               ),
             ),
-        ],
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _customerToken == null
+                          ? 'Akun Billing'
+                          : 'Akun Billing Terhubung',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (_customerToken == null) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email akun billing',
+                        ),
+                      ),
+                      TextField(
+                        controller: _password,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                        ),
+                      ),
+                      if (_register)
+                        TextField(
+                          controller: _store,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama toko',
+                          ),
+                        ),
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => setState(() => _register = !_register),
+                        child: Text(
+                          _register
+                              ? 'Sudah punya akun? Masuk'
+                              : 'Belum punya akun? Daftar',
+                        ),
+                      ),
+                      FilledButton(
+                        onPressed: _busy ? null : _authenticate,
+                        child: Text(
+                          _busy
+                              ? 'Menghubungkan…'
+                              : _register
+                              ? 'Daftar dan Hubungkan Perangkat'
+                              : 'Masuk dan Hubungkan Perangkat',
+                        ),
+                      ),
+                      if (_message != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _message!,
+                          style: TextStyle(
+                            color: _message!.contains('aktif')
+                                ? Colors.green.shade800
+                                : Colors.blueGrey.shade200,
+                          ),
+                        ),
+                      ],
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      Text(_email.text),
+                      if (_devicePk == null) ...[
+                        TextField(
+                          controller: _store,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama toko',
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: _busy
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _busy = true;
+                                    _message = null;
+                                  });
+                                  try {
+                                    await _registerDevice();
+                                    await _refreshLicense();
+                                  } catch (e) {
+                                    if (mounted) {
+                                      setState(() => _message = _cleanError(e));
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _busy = false);
+                                  }
+                                },
+                          child: const Text('Hubungkan perangkat'),
+                        ),
+                      ],
+                      OutlinedButton(
+                        onPressed: _busy
+                            ? null
+                            : () async {
+                                await _storage.delete(
+                                  key: 'billing.customer_token',
+                                );
+                                await _storage.delete(
+                                  key: 'billing.device_token',
+                                );
+                                await _storage.delete(key: 'billing.device_pk');
+                                if (mounted) {
+                                  setState(() {
+                                    _customerToken = null;
+                                    _deviceToken = null;
+                                    _devicePk = null;
+                                    _license = null;
+                                  });
+                                }
+                              },
+                        child: const Text('Putuskan akun billing'),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _saveRequestAndOpenDashboard,
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text(
+                        'Buat .posreq & buka dashboard billing',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Paket Langganan',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 10),
+                    if (_plans.isEmpty)
+                      OutlinedButton.icon(
+                        onPressed: _loadPlans,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Muat ulang paket'),
+                      )
+                    else ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedPlan,
+                        decoration: const InputDecoration(
+                          labelText: 'Pilih paket',
+                        ),
+                        items: _plans
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p['code']?.toString(),
+                                child: Text(
+                                  '${p['name']} · Rp ${p['price_idr']}',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedPlan = v),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: _busy ? null : _checkout,
+                        icon: const Icon(Icons.lock_open),
+                        label: const Text('Lanjutkan ke pembayaran'),
+                      ),
+                    ],
+                    OutlinedButton.icon(
+                      onPressed: _deviceToken == null || _busy
+                          ? null
+                          : _refreshLicense,
+                      icon: const Icon(Icons.sync),
+                      label: const Text('Periksa aktivasi dari server'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_message != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _message!,
+                  style: TextStyle(
+                    color: _message!.contains('aktif')
+                        ? Colors.green.shade800
+                        : Colors.blueGrey.shade800,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

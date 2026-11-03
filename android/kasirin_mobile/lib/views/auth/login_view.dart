@@ -127,151 +127,157 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(title: const Text('Masuk Kasirin')),
-      bottomNavigationBar: const SafeArea(top: false, child: TrialBanner()),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFFD7DEE5)),
-                ),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF006EAE),
-                                borderRadius: BorderRadius.circular(16),
+    return OwnerFormTheme(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF4F6F8),
+        appBar: AppBar(title: const Text('Masuk Kasirin')),
+        bottomNavigationBar: const SafeArea(top: false, child: TrialBanner()),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Color(0xFFD7DEE5)),
+                  ),
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF006EAE),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(
+                                  Icons.point_of_sale_rounded,
+                                  size: 36,
+                                  color: Colors.white,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.point_of_sale_rounded,
-                                size: 36,
-                                color: Colors.white,
+                              const SizedBox(height: 16),
+                              Text(
+                                'Kasirin POS',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF17212B),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Kasirin POS',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF17212B),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Masuk ke sistem kasir toko',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF586575),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Masuk ke sistem kasir toko',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: const Color(0xFF586575),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      TextField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Username',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: !_isPasswordVisible,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
+                            ],
                           ),
                         ),
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _login(),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF006EAE),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        const SizedBox(height: 32),
+                        TextField(
+                          controller: _usernameController,
+                          style: const TextStyle(color: ownerInk, fontSize: 15),
+                          decoration: const InputDecoration(
+                            labelText: 'Username',
+                            hintText: 'Username akun Anda',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: !_isPasswordVisible,
+                          style: const TextStyle(color: ownerInk, fontSize: 15),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            hintText: 'Password akun Anda',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              },
                             ),
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Colors.white,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF006EAE),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Masuk',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                )
-                              : const Text(
-                                  'Masuk',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: () => context.go('/setup'),
-                          icon: const Icon(
-                            Icons.settings_backup_restore,
-                            size: 16,
-                          ),
-                          label: const Text(
-                            'Setup Toko Baru',
-                            style: TextStyle(fontSize: 13),
                           ),
                         ),
-                      ),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: () => context.go('/connection'),
-                          icon: const Icon(Icons.lan_outlined, size: 16),
-                          label: const Text(
-                            'Koneksi Server LAN',
-                            style: TextStyle(fontSize: 13),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => context.go('/setup'),
+                            icon: const Icon(
+                              Icons.settings_backup_restore,
+                              size: 16,
+                            ),
+                            label: const Text(
+                              'Setup Toko Baru',
+                              style: TextStyle(fontSize: 13),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => context.go('/connection'),
+                            icon: const Icon(Icons.lan_outlined, size: 16),
+                            label: const Text(
+                              'Koneksi Server LAN',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

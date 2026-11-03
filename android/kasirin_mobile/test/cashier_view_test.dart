@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasirin_mobile/data/local_database.dart';
 import 'package:kasirin_mobile/domain/password_hasher.dart';
 import 'package:kasirin_mobile/domain/pos_repository.dart';
 import 'package:kasirin_mobile/providers.dart';
+import 'package:kasirin_mobile/services/trial_service.dart';
 import 'package:kasirin_mobile/views/cashier/cashier_view.dart';
 
 class _TestPasswordHasher extends PasswordHasher {
@@ -14,6 +16,23 @@ class _TestPasswordHasher extends PasswordHasher {
   @override
   Future<bool> verify(String password, String encoded) async =>
       encoded == 'test-hash:$password';
+}
+
+/// The real TrialService reads FlutterSecureStorage, which has no plugin in a
+/// widget test. Checkout gates on the trial, so the test needs an active one.
+class _ActiveTrialService extends TrialService {
+  _ActiveTrialService() : super(const FlutterSecureStorage());
+
+  @override
+  Future<TrialStatus> status({DateTime Function()? now}) async {
+    final start = DateTime.utc(2026, 11, 1);
+    return TrialStatus(
+      active: true,
+      startedAt: start,
+      endsAt: start.add(const Duration(days: 7)),
+      remaining: const Duration(days: 4),
+    );
+  }
 }
 
 void main() {
@@ -45,6 +64,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         repositoryFutureProvider.overrideWith((ref) async => repository),
+        trialServiceProvider.overrideWithValue(_ActiveTrialService()),
       ],
     );
     container
@@ -73,12 +93,18 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: CashierView()),
+          child: MediaQuery(
+            // Keep the real view metrics; only disable animations so the trial
+            // banner marquee does not block pumpAndSettle.
+            data: MediaQueryData.fromView(tester.view)
+                .copyWith(disableAnimations: true),
+            child: const MaterialApp(home: CashierView()),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Petugas: Siti Kasir'), findsOneWidget);
+      expect(find.text('Cashier Register'), findsOneWidget);
       expect(find.text('Kopi Test'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
@@ -99,12 +125,20 @@ void main() {
       expect(find.text('3'), findsOneWidget);
       expect(find.text('Rp 30.000'), findsWidgets);
 
-      await tester.tap(find.byIcon(Icons.add).last);
+      // The cart table scrolls inside the sheet; bring the row action into view
+      // before tapping it.
+      final addIcon = find.byIcon(Icons.add).last;
+      await tester.ensureVisible(addIcon);
+      await tester.pumpAndSettle();
+      await tester.tap(addIcon);
       await tester.pumpAndSettle();
       expect(find.text('4'), findsOneWidget);
       expect(find.text('Rp 40.000'), findsWidgets);
 
-      await tester.tap(find.text('Lanjut ke pembayaran'));
+      final payButton = find.text('Lanjut ke pembayaran');
+      await tester.ensureVisible(payButton);
+      await tester.pumpAndSettle();
+      await tester.tap(payButton);
       await tester.pumpAndSettle();
       expect(find.text('Pembayaran Tunai'), findsOneWidget);
 
