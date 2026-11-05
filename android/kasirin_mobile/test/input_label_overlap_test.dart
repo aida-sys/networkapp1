@@ -29,8 +29,12 @@ void _drain(WidgetTester tester) {
   while (tester.takeException() != null) {}
 }
 
-Future<ProviderContainer> _pump(WidgetTester tester, Widget view) async {
-  tester.view.physicalSize = const Size(1080, 2400);
+Future<ProviderContainer> _pump(
+  WidgetTester tester,
+  Widget view, {
+  Size viewport = const Size(360, 800),
+}) async {
+  tester.view.physicalSize = viewport * 3;
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.reset);
 
@@ -56,10 +60,7 @@ Future<ProviderContainer> _pump(WidgetTester tester, Widget view) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
-        theme: container.read(themeProvider),
-        home: view,
-      ),
+      child: MaterialApp(theme: container.read(themeProvider), home: view),
     ),
   );
   _drain(tester);
@@ -112,50 +113,38 @@ void main() {
     await _pump(tester, const LoginView());
     _expectLightInputs(tester, 'LoginView');
 
-    // Label geometry: the floating label straddles the top border by design,
-    // so it must have an opaque backing. With a light fill on a white card the
-    // label reads as part of the field instead of colliding with it.
-    await tester.enterText(find.byType(TextField).first, 'owner');
-    _drain(tester);
-    // The text cursor blinks forever, so pumpAndSettle would never settle.
-    await tester.pump(const Duration(milliseconds: 300));
-    _drain(tester);
+    _expectLoginLabelsAboveFields(tester);
+  });
 
-    final labelRect = tester.getRect(find.text('Username'));
-    final fillRect = tester.getRect(find.byType(InputDecorator).first);
-    // ignore: avoid_print
-    print('LOGIN label=$labelRect fill=$fillRect');
-    expect(
-      labelRect.top < fillRect.top,
-      isTrue,
-      reason: 'floating label should sit on the top border',
-    );
-    expect(
-      labelRect.center.dy,
-      lessThan(fillRect.top + 4),
-      reason: 'floating label should not sink into the field body',
-    );
+  testWidgets('login labels stay clear of inputs at desktop width', (
+    tester,
+  ) async {
+    await _pump(tester, const LoginView(), viewport: const Size(1280, 900));
+
+    _expectLoginLabelsAboveFields(tester);
   });
 
   testWidgets('setup owner inputs use light surface styling', (tester) async {
     await _pump(tester, const SetupOwnerView());
     _expectLightInputs(tester, 'SetupOwnerView');
 
-    // All five fields must be present and non-overlapping vertically.
-    final fields = find.byType(TextField);
-    expect(fields, findsNWidgets(5));
+    _expectSetupLabelsAboveFields(tester);
 
-    final rects = <Rect>[];
-    for (var i = 0; i < 5; i++) {
-      rects.add(tester.getRect(fields.at(i)));
-    }
-    for (var i = 1; i < rects.length; i++) {
-      expect(
-        rects[i].top,
-        greaterThanOrEqualTo(rects[i - 1].bottom),
-        reason: 'field $i must not overlap field ${i - 1}',
-      );
-    }
+    await tester.tap(find.byType(TextFormField).first);
+    await tester.pump(const Duration(milliseconds: 300));
+    _drain(tester);
+    _expectSetupLabelsAboveFields(tester);
+  });
+
+  testWidgets('setup labels stay clear of inputs at desktop width', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const SetupOwnerView(),
+      viewport: const Size(1280, 900),
+    );
+    _expectSetupLabelsAboveFields(tester);
   });
 
   testWidgets('dark app inputs keep the dark theme untouched', (tester) async {
@@ -167,4 +156,49 @@ void main() {
     expect(theme.inputDecorationTheme.fillColor, const Color(0xFF131B2E));
     expect(theme.brightness, Brightness.dark);
   });
+}
+
+void _expectLoginLabelsAboveFields(WidgetTester tester) {
+  final fields = find.byType(InputDecorator);
+  expect(fields, findsNWidgets(2));
+
+  for (final (label, index) in [('Username', 0), ('Password', 1)]) {
+    final labelRect = tester.getRect(find.text(label));
+    final fieldRect = tester.getRect(fields.at(index));
+    expect(
+      labelRect.bottom,
+      lessThan(fieldRect.top),
+      reason: '$label label must sit above, not overlap, its input',
+    );
+  }
+}
+
+void _expectSetupLabelsAboveFields(WidgetTester tester) {
+  const labels = [
+    'Nama Toko',
+    'Nama Lengkap Pemilik',
+    'Username',
+    'Password',
+    'Konfirmasi Password',
+  ];
+  final fields = find.byType(InputDecorator);
+  expect(fields, findsNWidgets(labels.length));
+
+  for (var i = 0; i < labels.length; i++) {
+    final labelRect = tester.getRect(find.text(labels[i]));
+    final fieldRect = tester.getRect(fields.at(i));
+    expect(
+      labelRect.bottom,
+      lessThan(fieldRect.top),
+      reason: '${labels[i]} label must sit above, not overlap, its input',
+    );
+    if (i + 1 < labels.length) {
+      final nextLabelRect = tester.getRect(find.text(labels[i + 1]));
+      expect(
+        nextLabelRect.top,
+        greaterThanOrEqualTo(fieldRect.bottom),
+        reason: '${labels[i + 1]} label must not overlap ${labels[i]} input',
+      );
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QFormLayout, QLineEdit
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
@@ -79,7 +79,30 @@ def test_login_view_shows_owner_setup_for_an_empty_database(owner_setup_session)
     qt_app = QApplication.instance() or QApplication([])
 
     view = LoginView(auth_service=None, setup_service=service)
+    view.resize(600, 680)
+    view.show()
+    qt_app.processEvents()
 
     assert view.setup_panel.isVisibleTo(view)
     assert view.login_panel.isHidden()
+    setup_form = view.setup_panel.layout().itemAt(1).layout()
+    assert setup_form.rowWrapPolicy() == QFormLayout.RowWrapPolicy.WrapAllRows
+    for field in view.setup_panel.findChildren(QLineEdit):
+        label = setup_form.labelForField(field)
+        assert label.geometry().bottom() < field.geometry().top()
+    view.close()
+
+
+def test_login_form_labels_are_above_inputs():
+    qt_app = QApplication.instance() or QApplication([])
+    view = LoginView(auth_service=None)
+    view.resize(600, 680)
+    view.show()
+    qt_app.processEvents()
+
+    form = view.login_panel.layout()
+    assert form.rowWrapPolicy() == QFormLayout.RowWrapPolicy.WrapAllRows
+    for field in view.login_panel.findChildren(QLineEdit):
+        label = form.labelForField(field)
+        assert label.geometry().bottom() < field.geometry().top()
     view.close()

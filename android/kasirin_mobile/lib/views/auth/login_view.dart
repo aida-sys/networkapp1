@@ -185,40 +185,68 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        TextField(
-                          controller: _usernameController,
-                          style: const TextStyle(color: ownerInk, fontSize: 15),
-                          decoration: const InputDecoration(
-                            labelText: 'Username',
-                            hintText: 'Username akun Anda',
-                            prefixIcon: Icon(Icons.person_outline),
+                        const Text(
+                          'Username',
+                          style: TextStyle(
+                            color: ownerInk,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
-                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 6),
+                        Semantics(
+                          label: 'Username',
+                          child: TextField(
+                            controller: _usernameController,
+                            style: const TextStyle(
+                              color: ownerInk,
+                              fontSize: 15,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'Masukkan username Anda',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: !_isPasswordVisible,
-                          style: const TextStyle(color: ownerInk, fontSize: 15),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            hintText: 'Password akun Anda',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
-                            ),
+                        const Text(
+                          'Password',
+                          style: TextStyle(
+                            color: ownerInk,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 6),
+                        Semantics(
+                          label: 'Password',
+                          child: TextField(
+                            controller: _passwordController,
+                            obscureText: !_isPasswordVisible,
+                            style: const TextStyle(
+                              color: ownerInk,
+                              fontSize: 15,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Masukkan password Anda',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _login(),
+                          ),
                         ),
                         const SizedBox(height: 24),
                         SizedBox(

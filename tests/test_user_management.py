@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QMessageBox
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -541,3 +541,43 @@ def test_owner_dashboard_fits_all_menu_cards_without_dashboard_heading(
     )
     assert card_bottom <= dashboard.menu_grid.geometry().bottom()
     dashboard.close()
+
+
+def test_owner_dashboard_theme_menu_applies_and_persists_palette(
+    user_session: Session,
+    qt_app: QApplication,
+):
+    owner = make_user(user_session, "owner-dashboard-theme", "OWNER")
+    dashboard = DashboardView(owner)
+    settings = dashboard._settings
+    previous_palette = settings.value("dashboard/palette")
+    try:
+        theme_actions = {
+            action.text(): action for action in dashboard.theme_button.menu().actions()
+        }
+        assert set(theme_actions) == {
+            "Dark Emerald",
+            "Ocean Blue",
+            "Light Slate",
+            "Warm Amber",
+            "Plum Night",
+        }
+
+        theme_actions["Light Slate"].trigger()
+        qt_app.processEvents()
+
+        assert dashboard._palette.name == "Light Slate"
+        assert settings.value("dashboard/palette") == "Light Slate"
+        assert "#f2f5f9" in dashboard.styleSheet()
+        assert "#ffffff" in dashboard.menu_grid.itemAt(0).widget().styleSheet()
+
+        reopened_dashboard = DashboardView(owner)
+        assert reopened_dashboard._palette.name == "Light Slate"
+        reopened_dashboard.close()
+    finally:
+        if previous_palette is None:
+            settings.remove("dashboard/palette")
+        else:
+            settings.setValue("dashboard/palette", previous_palette)
+        settings.sync()
+        dashboard.close()

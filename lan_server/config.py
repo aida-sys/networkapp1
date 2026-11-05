@@ -94,6 +94,9 @@ class LanSettings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        env_url = os.environ.get("DATABASE_URL") or os.environ.get("LAN_DATABASE_URL")
+        if env_url:
+            return env_url
         return f"sqlite:///{self.resolved_database_path}"
 
     @property

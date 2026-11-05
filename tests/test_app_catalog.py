@@ -121,6 +121,29 @@ def test_homepage_links_to_apps_page(client):
     assert 'href="/apps"' in client.get("/").text
 
 
+def test_homepage_hero_slides_render_product_screenshots(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    for app in app_catalog.hero_slides():
+        image_url = f'/static/assets/hero/{app["hero"]["image"]}'
+        assert image_url in response.text
+        image_response = client.get(image_url)
+        assert image_response.status_code == 200
+        assert image_response.headers["content-type"] == "image/png"
+
+
+def test_homepage_feature_modules_have_accessible_icons(client):
+    body = client.get("/").text
+    feature_grid = body.split('<div class="feature-grid">', 1)[1].split(
+        "</div>\n    </div>\n  </section>",
+        1,
+    )[0]
+    assert feature_grid.count('<article class="feature-item">') == 8
+    assert feature_grid.count('class="feature-icon') == 8
+    assert feature_grid.count("<svg ") == 8
+    assert feature_grid.count('aria-hidden="true"><svg') == 8
+
+
 def test_download_page_still_works(client):
     response = client.get("/download")
     assert response.status_code == 200

@@ -1,4 +1,4 @@
-# Prompt Proyek Mobile Kasirin (Flutter)
+2# Prompt Proyek Mobile Kasirin (Flutter)
 
 Salin prompt di bawah ini ke coding agent saat bekerja dari folder `android/`.
 

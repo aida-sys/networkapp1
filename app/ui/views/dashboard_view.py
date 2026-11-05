@@ -2,8 +2,8 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSettings, Qt, Signal
+from PySide6.QtGui import QAction, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -11,9 +11,11 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -30,6 +32,96 @@ from app.services.subscription_info import (
 )
 from app.utils.browser import open_external_url
 from app.utils.formatters import rupiah
+
+
+class _DashboardPalette:
+    def __init__(
+        self,
+        name: str,
+        background: str,
+        surface: str,
+        surface_raised: str,
+        text: str,
+        muted: str,
+        accent: str,
+        accent_text: str,
+        border: str,
+        gradient_end: str,
+    ):
+        self.name = name
+        self.background = background
+        self.surface = surface
+        self.surface_raised = surface_raised
+        self.text = text
+        self.muted = muted
+        self.accent = accent
+        self.accent_text = accent_text
+        self.border = border
+        self.gradient_end = gradient_end
+
+
+_DASHBOARD_PALETTES = (
+    _DashboardPalette(
+        "Dark Emerald",
+        "#0b1326",
+        "#171f33",
+        "#222a3d",
+        "#dae2fd",
+        "#bacbbe",
+        "#6dffba",
+        "#003822",
+        "#3b4a41",
+        "#222a3d",
+    ),
+    _DashboardPalette(
+        "Ocean Blue",
+        "#091722",
+        "#12283a",
+        "#1c354a",
+        "#e7f5ff",
+        "#b3cddc",
+        "#55c8ff",
+        "#062235",
+        "#31536a",
+        "#1c354a",
+    ),
+    _DashboardPalette(
+        "Light Slate",
+        "#f2f5f9",
+        "#ffffff",
+        "#e7edf4",
+        "#1d2939",
+        "#526174",
+        "#0877b9",
+        "#ffffff",
+        "#d3dce7",
+        "#e7edf4",
+    ),
+    _DashboardPalette(
+        "Warm Amber",
+        "#21170f",
+        "#302116",
+        "#45301e",
+        "#fff3e0",
+        "#d8c2a5",
+        "#ffc266",
+        "#382100",
+        "#674b30",
+        "#45301e",
+    ),
+    _DashboardPalette(
+        "Plum Night",
+        "#1b1426",
+        "#2a1e3a",
+        "#3a2b4f",
+        "#f4eafe",
+        "#c9b8db",
+        "#d6a5ff",
+        "#301344",
+        "#59446f",
+        "#3a2b4f",
+    ),
+)
 
 
 class DashboardView(QWidget):
@@ -67,6 +159,21 @@ class DashboardView(QWidget):
         self.subscription_title_label: QLabel | None = None
         self.subscription_desc_label: QLabel | None = None
         self.subscription_roadmap_label: QLabel | None = None
+        self._settings = QSettings("Kasirin", settings.app_name, self)
+        saved_palette_name = self._settings.value(
+            "dashboard/palette",
+            _DASHBOARD_PALETTES[0].name,
+            type=str,
+        )
+        self._palette = next(
+            (
+                palette
+                for palette in _DASHBOARD_PALETTES
+                if palette.name == saved_palette_name
+            ),
+            _DASHBOARD_PALETTES[0],
+        )
+        self._dashboard_cards: list[QFrame] = []
 
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 18, 28, 22)
@@ -74,6 +181,23 @@ class DashboardView(QWidget):
 
         heading_row = QHBoxLayout()
         heading_row.addStretch(1)
+        self.theme_button = QToolButton()
+        self.theme_button.setText("Tema Dashboard")
+        self.theme_button.setToolTip("Ubah warna dashboard owner")
+        self.theme_button.setVisible(role_name == "OWNER")
+        self.theme_button.setPopupMode(
+            QToolButton.ToolButtonPopupMode.InstantPopup
+        )
+        theme_menu = QMenu(self.theme_button)
+        for palette in _DASHBOARD_PALETTES:
+            action = theme_menu.addAction(palette.name)
+            action.setData(palette.name)
+            action.setCheckable(True)
+            action.setChecked(palette.name == self._palette.name)
+            action.triggered.connect(self._on_theme_action_triggered)
+        self.theme_button.setMenu(theme_menu)
+        heading_row.addWidget(self.theme_button)
+
         self.logout_button = QPushButton("Keluar")
         self.logout_button.clicked.connect(self.logout_requested.emit)
         self.logout_button.setStyleSheet(
@@ -123,18 +247,13 @@ class DashboardView(QWidget):
         self.update_store_profile(store)
 
         welcome_row = QHBoxLayout()
-        subtitle = QLabel(f"Selamat datang, {user.full_name}")
-        subtitle.setStyleSheet("font-size: 14px; color: #a1a1aa;")
-        welcome_row.addWidget(subtitle)
+        self.welcome_label = QLabel(f"Selamat datang, {user.full_name}")
+        welcome_row.addWidget(self.welcome_label)
         welcome_row.addStretch(1)
 
-        role_label = QLabel(role_name)
-        role_label.setStyleSheet(
-            "font-size: 11px; font-weight: 700; color: #89b4fa; "
-            "background: #0e2f4a; padding: 4px 8px; border-radius: 8px;"
-        )
-        role_label.setMaximumWidth(150)
-        welcome_row.addWidget(role_label)
+        self.role_label = QLabel(role_name)
+        self.role_label.setMaximumWidth(150)
+        welcome_row.addWidget(self.role_label)
         root.addLayout(welcome_row)
 
         self.menu_grid = QGridLayout()
@@ -208,6 +327,75 @@ class DashboardView(QWidget):
             )
         for column in range(3 if role_name == "OWNER" else 2):
             self.menu_grid.setColumnStretch(column, 1)
+        self._apply_dashboard_palette()
+
+    def _select_dashboard_palette(self, palette: _DashboardPalette) -> None:
+        self._palette = palette
+        for action in self.theme_button.menu().actions():
+            action.setChecked(action.data() == palette.name)
+        self._apply_dashboard_palette()
+        self._settings.setValue("dashboard/palette", palette.name)
+        self._settings.sync()
+        if self._settings.status() != QSettings.Status.NoError:
+            QMessageBox.warning(
+                self,
+                "Tema Dashboard",
+                "Tema diterapkan, tetapi pilihan tidak dapat disimpan.",
+            )
+
+    def _on_theme_action_triggered(self, checked: bool = False) -> None:
+        action = self.sender()
+        if not isinstance(action, QAction):
+            return
+        palette = next(
+            (item for item in _DASHBOARD_PALETTES if item.name == action.data()),
+            None,
+        )
+        if palette is not None:
+            self._select_dashboard_palette(palette)
+
+    def _apply_dashboard_palette(self) -> None:
+        palette = self._palette
+        self.setObjectName("ownerDashboard")
+        self.setStyleSheet(
+            f"QWidget#ownerDashboard {{ background-color: {palette.background}; }}"
+        )
+        self.store_name_label.setStyleSheet(
+            f"font-size: 25px; font-weight: 700; color: {palette.accent};"
+        )
+        self.store_slogan_label.setStyleSheet(
+            f"font-size: 18px; font-weight: 600; color: {palette.accent};"
+        )
+        self.store_address_label.setStyleSheet(
+            f"font-size: 16px; color: {palette.accent};"
+        )
+        self.store_whatsapp_label.setStyleSheet(
+            f"font-size: 16px; color: {palette.accent};"
+        )
+        self.welcome_label.setStyleSheet(
+            f"font-size: 14px; color: {palette.muted};"
+        )
+        self.role_label.setStyleSheet(
+            f"font-size: 11px; font-weight: 700; color: {palette.accent}; "
+            f"background: {palette.surface_raised}; padding: 4px 8px; "
+            "border-radius: 8px;"
+        )
+        for card in self._dashboard_cards:
+            card.setStyleSheet(
+                f"QFrame#dashboardCard {{ background: {palette.surface}; "
+                f"border: 1px solid {palette.border}; border-radius: 14px; }}"
+                "QLabel { border: none; background: transparent; }"
+            )
+            card.title_label.setStyleSheet(
+                f"font-size: 15px; font-weight: 700; color: {palette.text};"
+            )
+            card.description_label.setStyleSheet(
+                f"font-size: 12px; color: {palette.muted};"
+            )
+        if self.subscription_roadmap_label is not None:
+            self.subscription_roadmap_label.setStyleSheet(
+                f"font-size: 12px; color: {palette.muted};"
+            )
 
     def _create_card(
         self,
@@ -221,19 +409,24 @@ class DashboardView(QWidget):
     ):
         card = QFrame()
         card.setObjectName("dashboardCard")
+        palette = self._palette
         card.setStyleSheet(
-            "QFrame#dashboardCard { background: #1a1a1e; border: 1px solid #2d2d34; "
-            "border-radius: 14px; }"
+            f"QFrame#dashboardCard {{ background: {palette.surface}; "
+            f"border: 1px solid {palette.border}; border-radius: 14px; }}"
             "QLabel { border: none; background: transparent; }"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(6)
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 15px; font-weight: 700; color: #ffffff;")
+        title_label.setStyleSheet(
+            f"font-size: 15px; font-weight: 700; color: {palette.text};"
+        )
         description_label = QLabel(description)
         description_label.setWordWrap(True)
-        description_label.setStyleSheet("font-size: 12px; color: #a1a1aa;")
+        description_label.setStyleSheet(
+            f"font-size: 12px; color: {palette.muted};"
+        )
         action_button = QPushButton(action)
         action_button.setObjectName("cardActionButton")
         action_button.setStyleSheet(
@@ -253,6 +446,7 @@ class DashboardView(QWidget):
         card.title_label = title_label
         card.description_label = description_label
         card.action_button = action_button
+        self._dashboard_cards.append(card)
         return card
 
     # ------------------------------------------------------ kartu lisensi
@@ -286,7 +480,9 @@ class DashboardView(QWidget):
         roadmap_label = QLabel("")
         roadmap_label.setWordWrap(True)
         roadmap_label.setObjectName("subscriptionRoadmapLabel")
-        roadmap_label.setStyleSheet("font-size: 12px; color: #94a3b8;")
+        roadmap_label.setStyleSheet(
+            f"font-size: 12px; color: {self._palette.muted};"
+        )
         card = self._create_card(
             "Langganan & Pengembangan",
             "Memeriksa langganan…",
@@ -594,10 +790,12 @@ class DashboardView(QWidget):
         self.refresh_subscription()
         QMessageBox.information(self, "Langganan diperbarui", "Lisensi POS berhasil diperbarui.")
 
-    @staticmethod
-    def _subscription_detail_html(info: dict) -> str:
+    def _subscription_detail_html(self, info: dict) -> str:
         plan = info.get("plan") or {}
-        parts = ["<h3 style='color:#89b4fa; margin-bottom:4px;'>Langganan Aktif</h3>"]
+        parts = [
+            f"<h3 style='color:{self._palette.accent}; margin-bottom:4px;'>"
+            "Langganan Aktif</h3>"
+        ]
         if plan:
             status = "Aktif" if info.get("activated") else "Tidak aktif"
             expires = plan.get("expires_at")
@@ -616,7 +814,8 @@ class DashboardView(QWidget):
         plans = info.get("plans") or []
         if plans:
             parts.append(
-                "<h3 style='color:#89b4fa; margin-bottom:4px;'>Paket Langganan</h3><ul>"
+                f"<h3 style='color:{self._palette.accent}; margin-bottom:4px;'>"
+                "Paket Langganan</h3><ul>"
             )
             for item in plans:
                 duration = item.get("duration_days")
@@ -633,7 +832,7 @@ class DashboardView(QWidget):
         roadmap = info.get("roadmap") or []
         if roadmap:
             parts.append(
-                "<h3 style='color:#89b4fa; margin-bottom:4px;'>"
+                f"<h3 style='color:{self._palette.accent}; margin-bottom:4px;'>"
                 "Fitur Berikutnya (Rencana Pengembangan)</h3><ul>"
             )
             for item in roadmap:
@@ -642,7 +841,10 @@ class DashboardView(QWidget):
                 description = str(item.get("description") or "").strip()
                 line = f"<li><b>{title}</b>"
                 if eta:
-                    line += f" <span style='color:#94a3b8;'>({escape(eta)})</span>"
+                    line += (
+                        f" <span style='color:{self._palette.muted};'>"
+                        f"({escape(eta)})</span>"
+                    )
                 if description:
                     line += f"<br/>{escape(description)}"
                 parts.append(line + "</li>")
@@ -656,7 +858,8 @@ class DashboardView(QWidget):
         note = str(info.get("note") or "").strip()
         if note:
             parts.append(
-                f"<p style='color:#94a3b8; font-size:12px;'>{escape(note)}</p>"
+                f"<p style='color:{self._palette.muted}; font-size:12px;'>"
+                f"{escape(note)}</p>"
             )
         return "".join(parts)
 

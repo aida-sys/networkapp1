@@ -27,21 +27,23 @@ class LanBase(DeclarativeBase):
 
 # Satu engine untuk seluruh proses. SQLite tidak boleh ditulis dari beberapa
 # proses sekaligus, jadi server harus dijalankan dengan --workers 1.
+connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 engine = create_engine(
     settings.database_url,
     future=True,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
     pool_pre_ping=True,
 )
 
 
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragmas(dbapi_connection, _):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute(f"PRAGMA busy_timeout={settings.db_busy_timeout_ms}")
-    cursor.close()
+    if engine.dialect.name == "sqlite":
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute(f"PRAGMA busy_timeout={settings.db_busy_timeout_ms}")
+        cursor.close()
 
 
 SessionLocal = sessionmaker(

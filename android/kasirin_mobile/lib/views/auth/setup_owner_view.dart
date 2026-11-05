@@ -219,10 +219,18 @@ class _SetupOwnerViewState extends ConsumerState<SetupOwnerView> {
                             ),
                             const SizedBox(height: 16),
                           ],
+                          const Text(
+                            'Nama Toko',
+                            style: TextStyle(
+                              color: ownerInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _storeNameController,
                             decoration: const InputDecoration(
-                              labelText: 'Nama Toko',
                               hintText: 'Contoh: Toko Berkah Sejahtera',
                               prefixIcon: Icon(Icons.business_outlined),
                             ),
@@ -235,10 +243,18 @@ class _SetupOwnerViewState extends ConsumerState<SetupOwnerView> {
                             },
                           ),
                           const SizedBox(height: 16),
+                          const Text(
+                            'Nama Lengkap Pemilik',
+                            style: TextStyle(
+                              color: ownerInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _fullNameController,
                             decoration: const InputDecoration(
-                              labelText: 'Nama Lengkap Pemilik',
                               hintText: 'Contoh: Ahmad Fadli',
                               prefixIcon: Icon(Icons.badge_outlined),
                             ),
@@ -251,10 +267,18 @@ class _SetupOwnerViewState extends ConsumerState<SetupOwnerView> {
                             },
                           ),
                           const SizedBox(height: 16),
+                          const Text(
+                            'Username',
+                            style: TextStyle(
+                              color: ownerInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _usernameController,
                             decoration: const InputDecoration(
-                              labelText: 'Username',
                               hintText: 'Username untuk login',
                               prefixIcon: Icon(Icons.person_outline),
                             ),
@@ -267,11 +291,19 @@ class _SetupOwnerViewState extends ConsumerState<SetupOwnerView> {
                             },
                           ),
                           const SizedBox(height: 16),
+                          const Text(
+                            'Password',
+                            style: TextStyle(
+                              color: ownerInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: !_isPasswordVisible,
                             decoration: InputDecoration(
-                              labelText: 'Password',
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -295,11 +327,19 @@ class _SetupOwnerViewState extends ConsumerState<SetupOwnerView> {
                             },
                           ),
                           const SizedBox(height: 16),
+                          const Text(
+                            'Konfirmasi Password',
+                            style: TextStyle(
+                              color: ownerInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: !_isPasswordVisible,
                             decoration: const InputDecoration(
-                              labelText: 'Konfirmasi Password',
                               prefixIcon: Icon(Icons.lock_reset_outlined),
                             ),
                             textInputAction: TextInputAction.done,

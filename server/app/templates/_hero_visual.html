@@ -1,9 +1,15 @@
-{# Visual hero per slide. Dipilih lewat app.hero.visual:
+{# Visual hero per slide. Gambar produk dipilih lewat app.hero.image:
    "single"  -> satu perangkat kasir
    "network" -> satu server toko + beberapa klien
    "cloud"   -> ringkasan banyak cabang + ponsel
-   Semua ilustrasi murni CSS/HTML, tanpa aset gambar baru. #}
-{% if app.hero.visual == 'single' %}
+   Ilustrasi CSS tetap menjadi fallback bila sebuah slide belum punya gambar. #}
+{% if app.hero.image %}
+<img
+  class="hero-screenshot"
+  src="/static/assets/hero/{{ app.hero.image }}"
+  alt="Tampilan {{ app.name }}"
+  decoding="async">
+{% elif app.hero.visual == 'single' %}
 <div class="device-card">
   <div class="device-top"><span class="window-dots"><i></i><i></i><i></i></span><span>Kasir Stand Alone</span><span class="online-pill"><i></i> Lokal</span></div>
   <div class="dashboard-body">
